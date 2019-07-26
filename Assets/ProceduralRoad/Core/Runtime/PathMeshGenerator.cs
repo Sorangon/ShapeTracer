@@ -101,21 +101,25 @@ namespace RoadGenerator
 
         private Mesh GenerateRoadMesh(PathData path)
         {
-            Vector3[] vertices = new Vector3[2 * (path.Length + (_subdivisions - 1) * (path.Length - 1))];
+            int points = path.Length + (_loopTrack ? 1 : 0);
+            Vector3[] vertices = new Vector3[2 * (points + (_subdivisions - 1) * (points - 1))];
             Vector2[] uvs = new Vector2[vertices.Length];
-            int[] triangles = new int[((path.Length - 1) * _subdivisions) * 6];
+            int[] triangles = new int[((points - 1) * _subdivisions) * 6];
 
             //Debug.Log(vertices.Length);
 
-            for(int p = 0, v = 0; p < path.Length - 1; p++)
+            for(int p = 0, v = 0; p < points - 1; p++)
             {
                 for(int i = p > 0 ? 1 : 0; i <= _subdivisions; i++)
                 {
                     //Set vertices
                     float curveT = (float)i / (float)_subdivisions;
 
-                    Vector3 side = Vector3.Cross(path[p].normal, path.GetDerivativeDirection(p, curveT)).normalized * _widthMultiplier;
+                    Vector3 derivative = path.GetDerivativeDirection(p, curveT);
+                    Vector3 side = Vector3.Cross(path[p].normal, derivative).normalized * _widthMultiplier;
+
                     Vector3 bezierPos = path.GetBezierPosition(p, curveT);
+                    
                     vertices[v * 2] = bezierPos - side;
                     vertices[v * 2 + 1] = bezierPos + side;
 

@@ -48,18 +48,12 @@ namespace RoadGenerator
         /// <param name="offset">World game object position</param>
         public void AddPoint(Vector3 offset)
         {
-            Vector3 newPointPos = offset;
+            Vector3 newPointPos = _path[Length - 1].GetObjectSpaceTangent(PathTangentType.Out);
 
-            if(Length > 1)
-            {
-                newPointPos += (_path[_path.Count - 1].position - _path[_path.Count - 2].position).normalized * 2;
-            }
-            else
-            {
-                newPointPos += _path[_path.Count - 1].position  + Vector3.forward * 2;
-            }
+            Vector3 newInTangent = _path[Length - 1].GetPointSpaceTangent(PathTangentType.In);
+            Vector3 newOutTangent = _path[Length - 1].GetPointSpaceTangent(PathTangentType.Out);
 
-            _path.Add(new PathPoint(newPointPos, _path[_path.Count - 1].normal));
+            _path.Add(new PathPoint(newPointPos, _path[_path.Count - 1].normal, newInTangent, newOutTangent));
         }
 
         /// <summary>
@@ -87,11 +81,13 @@ namespace RoadGenerator
 
         public Vector3 GetBezierPosition(int fromPoint, float t)
         {
+            int toPoint = (fromPoint + 1) % (Length);
+
             return GetBezierPosition
                 (_path[fromPoint].position,
-                _path[fromPoint].GetWorldSpaceTangent(PathTangentType.Out),
-                _path[fromPoint + 1].GetWorldSpaceTangent(PathTangentType.In), 
-                _path[fromPoint + 1].position, t);
+                _path[fromPoint].GetObjectSpaceTangent(PathTangentType.Out),
+                _path[toPoint].GetObjectSpaceTangent(PathTangentType.In), 
+                _path[toPoint].position, t);
         }
 
         public Vector3 GetBezierPosition(Vector3 p0, Vector3 t0Out, Vector3 t1In, Vector3 p1, float t)
@@ -106,11 +102,13 @@ namespace RoadGenerator
 
         public Vector3 GetDerivativeDirection(int fromPoint, float t)
         {
+            int toPoint = (fromPoint + 1) % (Length);
+
             return GetDerivativeDirection
                 (_path[fromPoint].position,
-                _path[fromPoint].GetWorldSpaceTangent(PathTangentType.Out),
-                _path[fromPoint + 1].GetWorldSpaceTangent(PathTangentType.In),
-                _path[fromPoint + 1].position, t);
+                _path[fromPoint].GetObjectSpaceTangent(PathTangentType.Out),
+                _path[toPoint].GetObjectSpaceTangent(PathTangentType.In),
+                _path[toPoint].position, t);
         }
 
 

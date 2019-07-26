@@ -82,7 +82,7 @@ namespace RoadGenerator
             //Draw tangents handles
             for(int i = 0; i < 2; i++)
             {
-                Vector3 tangentPos = _currentPath.transform.position + _currentPath.pathData[selectedId].GetWorldSpaceTangent((PathTangentType)i);
+                Vector3 tangentPos = _currentPath.transform.position + _currentPath.pathData[selectedId].GetObjectSpaceTangent((PathTangentType)i);
                 Handles.DrawAAPolyLine(6,tangentPos, handlePos);
 
                 if (Handles.Button(tangentPos, Quaternion.identity, 0.03f * cameraDistance, 0.04f * cameraDistance, Handles.SphereHandleCap))
@@ -102,14 +102,14 @@ namespace RoadGenerator
                 handlePos = _currentPath.transform.position;
 
                 //Edits the position of the selected tangent
-                Vector3 newPos = MovePoint(_currentPath.pathData[selectedId].GetWorldSpaceTangent(_selectedTangent) + handlePos);
-                _currentPath.pathData[selectedId].SetWorldSpaceTangent(_selectedTangent, newPos);
+                Vector3 newPos = MovePoint(_currentPath.pathData[selectedId].GetObjectSpaceTangent(_selectedTangent) + handlePos);
+                _currentPath.pathData[selectedId].SetObjectSpaceTangent(_selectedTangent, newPos);
 
                 //Mirrors the position of the opposite tangent
-                Vector3 mirrorTangentDir = -_currentPath.pathData[selectedId].GetLocalSpaceTangent(_selectedTangent).normalized;
-                float mirrorTangentLength =  _currentPath.pathData[selectedId].GetLocalSpaceTangent(oppositeTangent).magnitude;
+                Vector3 mirrorTangentDir = -_currentPath.pathData[selectedId].GetPointSpaceTangent(_selectedTangent).normalized;
+                float mirrorTangentLength =  _currentPath.pathData[selectedId].GetPointSpaceTangent(oppositeTangent).magnitude;
 
-                _currentPath.pathData[selectedId].SetLocalSpaceTangent(oppositeTangent, mirrorTangentDir * mirrorTangentLength);
+                _currentPath.pathData[selectedId].SetPointSpaceTangent(oppositeTangent, mirrorTangentDir * mirrorTangentLength);
             }          
         }
 

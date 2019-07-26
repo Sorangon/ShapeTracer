@@ -102,8 +102,8 @@ namespace RoadGenerator
                 Handles.DrawBezier(
                     p0.position + offset, 
                     p1.position + offset, 
-                    p0.GetWorldSpaceTangent(PathTangentType.Out) + offset, 
-                    p1.GetWorldSpaceTangent(PathTangentType.In) + offset, Color.green, null, 5f);
+                    p0.GetObjectSpaceTangent(PathTangentType.Out) + offset, 
+                    p1.GetObjectSpaceTangent(PathTangentType.In) + offset, Color.green, null, 5f);
             }
         }
 

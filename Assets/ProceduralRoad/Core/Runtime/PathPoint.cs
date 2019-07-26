@@ -50,11 +50,19 @@ namespace RoadGenerator
             _outTangent = tangentOffset;
         }
 
+        public PathPoint(Vector3 position, Vector3 normal, Vector3 inTangent, Vector3 outTangent)
+        {
+            _position = position;
+            _normal = normal;
+            _inTangent = inTangent;
+            _outTangent = outTangent;
+        }
+
         #endregion
 
         #region Methods
 
-        public Vector3 GetLocalSpaceTangent(PathTangentType tangent)
+        public Vector3 GetPointSpaceTangent(PathTangentType tangent)
         {
             if(tangent == PathTangentType.In)
             {
@@ -70,7 +78,7 @@ namespace RoadGenerator
             }
         }
 
-        public void SetLocalSpaceTangent(PathTangentType tangent,Vector3 newPos)
+        public void SetPointSpaceTangent(PathTangentType tangent,Vector3 newPos)
         {
             if (tangent == PathTangentType.In)
             {
@@ -82,14 +90,14 @@ namespace RoadGenerator
             }
         }
 
-        public Vector3 GetWorldSpaceTangent(PathTangentType tangent)
+        public Vector3 GetObjectSpaceTangent(PathTangentType tangent)
         {
-            return GetLocalSpaceTangent(tangent) + _position;
+            return GetPointSpaceTangent(tangent) + _position;
         }
 
-        public void SetWorldSpaceTangent(PathTangentType tangent, Vector3 newPos)
+        public void SetObjectSpaceTangent(PathTangentType tangent, Vector3 newPos)
         {
-            SetLocalSpaceTangent(tangent, newPos - _position);
+            SetPointSpaceTangent(tangent, newPos - _position);
         }
 
         #endregion
