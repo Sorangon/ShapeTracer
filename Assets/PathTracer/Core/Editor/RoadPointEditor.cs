@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEditor;
 //using UnityEditor.SceneManagement;
 
-namespace RoadGenerator
+namespace PathTracer
 {
     public class RoadPointEditor : MonoBehaviour
     {

@@ -1,14 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using PathTracer.CrossSectionUtility;
 
-namespace RoadGenerator
+namespace PathTracer
 {
     [RequireComponent(typeof(MeshRenderer)), RequireComponent(typeof(MeshFilter))]
     public class PathMeshGenerator : MonoBehaviour
     {
         #region Attributes
 
+        [SerializeField] private CrossSectionAsset _crossSectionAsset = null;
         [SerializeField] private PathData _pathData = new PathData();
         [SerializeField, Range(0.5f, 2.0f)] private float _widthMultiplier = 1.0f;
         [SerializeField, Range(0.2f, 10.0f)] private float _uvResolution = 1.0f;
@@ -19,7 +21,7 @@ namespace RoadGenerator
         private MeshRenderer _targetRenderer = null;
         private MeshFilter _targetFilter = null;
 
-        private int[] _trisDrawOrder = new int[6] { 0, 2, 1, 1, 2, 3 };
+        private static readonly int[] _trisDrawOrder = new int[6] { 0, 2, 1, 1, 2, 3 };
 
         #region Accessors
 
@@ -54,6 +56,8 @@ namespace RoadGenerator
             get { return _pathData; }
         }
 
+        public CrossSectionAsset crossSection { get { return _crossSectionAsset; } set { _crossSectionAsset = value; } }
+
         public float widthMultiplier
         {
             get { return _widthMultiplier; }
@@ -76,7 +80,6 @@ namespace RoadGenerator
 
         #endregion
         #endregion
-
 
         #region Methods
         #region Lifecycle
@@ -101,6 +104,17 @@ namespace RoadGenerator
 
         private Mesh GenerateRoadMesh(PathData path)
         {
+            CrossSection section;
+
+            if(_crossSectionAsset != null)
+            {
+                section = _crossSectionAsset.crossSection;
+            }
+            else
+            {
+                section = CrossSection.defaultSection;
+            }
+
             int points = path.Length + (_loopTrack ? 1 : 0);
             Vector3[] vertices = new Vector3[2 * (points + (_subdivisions - 1) * (points - 1))];
             Vector2[] uvs = new Vector2[vertices.Length];

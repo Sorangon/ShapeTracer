@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.SceneManagement;
+using PathTracer.CrossSectionUtility;
 
-namespace RoadGenerator
+namespace PathTracer
 {
     [CustomEditor(typeof(PathMeshGenerator))]
     public class RoadPathEditor : Editor
@@ -13,6 +13,7 @@ namespace RoadGenerator
 
         private PathMeshGenerator _currentPath = null;
         private bool _autoGenerateRoad = true;
+        private bool _editMode = false;
 
         #endregion
 
@@ -28,14 +29,15 @@ namespace RoadGenerator
 
         public override void OnInspectorGUI()
         {
-            //base.OnInspectorGUI();
-
             GUILayout.Space(5.0f);
 
             EditorGUI.BeginChangeCheck();
 
+            CrossSectionAsset crossSection = (CrossSectionAsset)EditorGUILayout.ObjectField(
+                "Cross Section", _currentPath.crossSection, typeof(CrossSectionAsset), false);
+
             float widthMultiplier = EditorGUILayout.Slider("Width",_currentPath.widthMultiplier, 0.01f, 5.0f);
-            int subdivisions = EditorGUILayout.IntSlider("Subdivisions",_currentPath.subdivisions, 1, 20);
+            int subdivisions = EditorGUILayout.IntSlider("Subdivisions",_currentPath.subdivisions, 1, 25);
             float uvResolution = EditorGUILayout.Slider("Uv resolution",_currentPath.uvResolution, 0.2f, 10.0f);
             bool loopTrack = EditorGUILayout.Toggle("Loop track",_currentPath.loopTrack);
 
@@ -47,14 +49,33 @@ namespace RoadGenerator
                 _currentPath.subdivisions = subdivisions;
                 _currentPath.uvResolution = uvResolution;
                 _currentPath.loopTrack = loopTrack;
+                _currentPath.crossSection = crossSection;
             }
+
+            GUILayout.Space(20);
 
             for (int i = 0; i < _currentPath.pathData.Length; i++)
             {
-                if(RoadPointEditor.selectedId == i)
+                if (RoadPointEditor.selectedId == i)
                 {
                     RoadPointEditor.EditPointGUI(i);
                 }
+            }
+
+            if (GUILayout.Button("Add Point"))
+            {
+                Undo.RecordObject(_currentPath, "Add point");
+                EditorUtility.SetDirty(_currentPath);
+                _currentPath.pathData.AddPoint(_currentPath.transform.position);
+                SceneView.RepaintAll();
+            }
+
+            if (GUILayout.Button("Remove Point") && _currentPath.pathData.Length > 1)
+            {
+                Undo.RecordObject(_currentPath, "Remove point");
+                EditorUtility.SetDirty(_currentPath);
+                _currentPath.pathData.RemovePoint(RoadPointEditor.selectedId);
+                SceneView.RepaintAll();
             }
 
             GUILayout.Space(20);
@@ -64,25 +85,7 @@ namespace RoadGenerator
             if (!_autoGenerateRoad && GUILayout.Button("Generate Road"))
             {
                 _currentPath.UpdateRoad();
-                Repaint();
-            }
-
-            GUILayout.Space(20);
-
-            if(GUILayout.Button("Add Point"))
-            {
-                Undo.RecordObject(_currentPath, "Add point");
-                EditorUtility.SetDirty(_currentPath);
-                _currentPath.pathData.AddPoint(_currentPath.transform.position);
-                Repaint();
-            }
-
-            if (GUILayout.Button("Remove Point") && _currentPath.pathData.Length > 1)
-            {
-                Undo.RecordObject(_currentPath, "Remove point");
-                EditorUtility.SetDirty(_currentPath);
-                _currentPath.pathData.RemovePoint(RoadPointEditor.selectedId);
-                Repaint();
+                SceneView.RepaintAll();
             }
         }
 
@@ -125,6 +128,9 @@ namespace RoadGenerator
             _currentPath = null;
         }
 
+
+        #endregion
+        #region Private
 
         #endregion
         #endregion

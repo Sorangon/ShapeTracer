@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace RoadGenerator
+namespace PathTracer
 {
     public enum PathTangentType
     {
