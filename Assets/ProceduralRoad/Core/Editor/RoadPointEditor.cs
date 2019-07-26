@@ -13,10 +13,12 @@ namespace RoadGenerator
         private static int _selectedId = -1;
         private static PathTangentType _selectedTangent =  (PathTangentType)(-1);
         private static PathMeshGenerator _currentPath = null;
+        private static bool _displayNormal = false;
 
         #region Accessors
         /// <summary> Current edited point id </summary>
         public static int selectedId { get { return _selectedId; } }
+        public static bool displayNormal { get { return _displayNormal; } set { _displayNormal = value; } }
 
         #endregion
         #endregion
@@ -35,7 +37,60 @@ namespace RoadGenerator
         }
 
         /// <summary>
-        /// Updates the point editor
+        /// Draws the point editor on GUI
+        /// </summary>
+        public static void EditPointGUI(int index)
+        {
+            GUILayout.Space(10.0f);
+            GUILayout.BeginVertical("Box");
+            GUILayout.Space(3.0f);
+
+            GUIStyle labelStyle = new GUIStyle();
+            labelStyle.fontStyle = FontStyle.Bold;
+
+            EditorGUILayout.LabelField("Editing point " + index, labelStyle);
+
+            EditorGUI.BeginChangeCheck();
+            Vector3 newPointPos = EditorGUILayout.Vector3Field("Position", _currentPath.pathData[index].position);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(_currentPath, "Move Point");
+                EditorUtility.SetDirty(_currentPath);
+                _currentPath.pathData[index].position = newPointPos;
+            }
+
+            GUILayout.Space(3.0f);
+            EditorGUILayout.BeginHorizontal();
+
+            EditorGUI.BeginChangeCheck();
+            float newNormalAngle = EditorGUILayout.Slider("Normal Angle", _currentPath.pathData[index].normalAngle, -180, 180);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(_currentPath, "Rotate Normal");
+                EditorUtility.SetDirty(_currentPath);
+                _currentPath.pathData[index].normalAngle = newNormalAngle;
+            }
+
+            EditorGUI.BeginDisabledGroup(_currentPath.pathData[index].normalAngle == 0);
+            if (GUILayout.Button("Reset"))
+            {
+                Undo.RecordObject(_currentPath, "Reset Normal Rotation");
+                EditorUtility.SetDirty(_currentPath);
+                _currentPath.pathData[index].normalAngle = 0;
+            }
+
+
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUILayout.EndHorizontal();
+            GUILayout.Space(3.0f);
+            GUILayout.EndVertical();
+        }
+
+        /// <summary>
+        /// Updates the scene editor
         /// </summary>
         public static void OnSceneUpdate(SceneView view)
         {
@@ -56,13 +111,18 @@ namespace RoadGenerator
         {
             Vector3 handlePosition = _currentPath.transform.position + _currentPath.pathData[index].position;
 
+            //Calculate the camera distance to have a constant handle size on screen
+            float cameraDistance = (view.camera.transform.position - handlePosition).magnitude;
+
+            if (_displayNormal)
+            {
+                Handles.DrawLine(handlePosition, handlePosition + _currentPath.pathData[index].normal * 2.0f);
+            }
+
             if (index >= 1)
             {
                 Handles.color = Color.green;
             }
-
-            //Calculate the camera distance to have a constant handle size on screen
-            float cameraDistance = (view.camera.transform.position - handlePosition).magnitude;
 
             if (Handles.Button(handlePosition, Quaternion.identity, 0.04f * cameraDistance, 0.05f * cameraDistance, Handles.SphereHandleCap))
             {
@@ -115,8 +175,16 @@ namespace RoadGenerator
 
         private static Vector3 MovePoint(Vector3 handlePos)
         {
+            EditorGUI.BeginChangeCheck();
             handlePos = Handles.DoPositionHandle(handlePos, Quaternion.identity);
-            return handlePos - _currentPath.transform.position;    
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(_currentPath, "Move Point");
+                EditorUtility.SetDirty(_currentPath);
+            }
+
+            return handlePos - _currentPath.transform.position;
         }
 
 

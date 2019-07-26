@@ -11,9 +11,10 @@ namespace RoadGenerator
 
         [SerializeField] private Vector3 _position = Vector3.zero;
         [SerializeField] private Vector3 _normal = Vector3.up;
-        [SerializeField] private Vector3 _binormal = Vector3.right;
+        //[SerializeField] private Vector3 _binormal = Vector3.right;
         [SerializeField] private Vector3 _inTangent = Vector3.forward;
         [SerializeField] private Vector3 _outTangent = Vector3.back;
+        [SerializeField] private float _normalAngle = 0.0f;
 
         /// <summary> The position of the point in world space </summary>
         public Vector3 position
@@ -29,10 +30,16 @@ namespace RoadGenerator
             set { _normal = value; }
         }
 
-        public Vector3 binormal
+        /*public Vector3 binormal
         {
             get { return _binormal; }
             set { _binormal = value; }
+        }*/
+
+        public float normalAngle
+        {
+            get { return _normalAngle; }
+            set { _normalAngle = value; }
         }
 
         #endregion

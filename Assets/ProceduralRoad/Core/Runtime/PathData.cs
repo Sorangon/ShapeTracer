@@ -15,7 +15,10 @@ namespace RoadGenerator
 
         public PathPoint this[int i]
         {
-            get { return _path[i]; }
+            get
+            {
+                return _path[i % Length];
+            }
         }
 
         public int Length

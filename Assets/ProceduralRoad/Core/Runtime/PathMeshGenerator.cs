@@ -112,18 +112,23 @@ namespace RoadGenerator
             {
                 for(int i = p > 0 ? 1 : 0; i <= _subdivisions; i++)
                 {
-                    //Set vertices
+                    //Calculates vertices
                     float curveT = (float)i / (float)_subdivisions;
 
-                    Vector3 derivative = path.GetDerivativeDirection(p, curveT);
-                    Vector3 side = Vector3.Cross(path[p].normal, derivative).normalized * _widthMultiplier;
+                    Vector3 bezierPos = path.GetBezierPosition(p, curveT); //Gets the positionon the bezier curve at t
+                    Vector3 derivative = path.GetDerivativeDirection(p, curveT).normalized; //Gets the derivative on the bézier curve at t
 
-                    Vector3 bezierPos = path.GetBezierPosition(p, curveT);
+                    float angle = Mathf.Lerp(path[p].normalAngle, path[p + 1].normalAngle, curveT); //Gets the normal angle
+                    Vector3 normal = Quaternion.AngleAxis(angle, Vector3.back) * path[p].normal; //Calculates the normal
+                    normal = Quaternion.LookRotation(derivative) * normal; //Applys derivative rotion to the normal
+
+                    Vector3 side = Vector3.Cross(normal, derivative) * _widthMultiplier;
+
+                    //Debug.DrawRay(transform.position + path.GetBezierPosition(p, curveT), normal, Color.yellow);
                     
                     vertices[v * 2] = bezierPos - side;
                     vertices[v * 2 + 1] = bezierPos + side;
 
-                    //Debug.DrawRay(transform.position + vertices[(v) * 2], Vector3.up, Color.red);
                     //Debug.DrawRay(transform.position + vertices[(v) * 2 + 1], Vector3.up, Color.red);
 
                     //Uvs
