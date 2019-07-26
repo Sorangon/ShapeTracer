@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+//using UnityEditor.SceneManagement;
 
 namespace RoadGenerator
 {
@@ -36,13 +37,13 @@ namespace RoadGenerator
         /// <summary>
         /// Updates the point editor
         /// </summary>
-        public static void OnSceneUpdate()
+        public static void OnSceneUpdate(SceneView view)
         {
             Handles.color = Color.blue;
 
             for (int i = 0; i < _currentPath.pathData.Length; i++)
             {
-                DrawPoint(i);
+                DrawPoint(i, view);
             }
 
             _currentPath.UpdateRoad();
@@ -51,27 +52,30 @@ namespace RoadGenerator
 
         #region Private
 
-        private static void DrawPoint(int index)
+        private static void DrawPoint(int index, SceneView view)
         {
             Vector3 handlePosition = _currentPath.transform.position + _currentPath.pathData[index].position;
 
-            if (index == 1)
+            if (index >= 1)
             {
                 Handles.color = Color.green;
             }
 
-            if (Handles.Button(handlePosition, Quaternion.identity, 0.25f, 0.3f, Handles.SphereHandleCap))
+            //Calculate the camera distance to have a constant handle size on screen
+            float cameraDistance = (view.camera.transform.position - handlePosition).magnitude;
+
+            if (Handles.Button(handlePosition, Quaternion.identity, 0.04f * cameraDistance, 0.05f * cameraDistance, Handles.SphereHandleCap))
             {
                 SelectPoint(index);
             }
 
             if (_selectedId == index)
             {
-                DrawSelectedPointHandles(index, handlePosition);
+                DrawSelectedPointHandles(index, handlePosition, cameraDistance);
             }
         }
 
-        private static void DrawSelectedPointHandles(int selectedId, Vector3 handlePos)
+        private static void DrawSelectedPointHandles(int selectedId, Vector3 handlePos, float cameraDistance)
         {
             Handles.color = Color.yellow;
 
@@ -79,9 +83,9 @@ namespace RoadGenerator
             for(int i = 0; i < 2; i++)
             {
                 Vector3 tangentPos = _currentPath.transform.position + _currentPath.pathData[selectedId].GetWorldSpaceTangent((PathTangentType)i);
-                Handles.DrawLine(tangentPos, handlePos);
+                Handles.DrawAAPolyLine(6,tangentPos, handlePos);
 
-                if (Handles.Button(tangentPos, Quaternion.identity, 0.15f, 0.2f, Handles.SphereHandleCap))
+                if (Handles.Button(tangentPos, Quaternion.identity, 0.03f * cameraDistance, 0.04f * cameraDistance, Handles.SphereHandleCap))
                 {
                     _selectedTangent = (PathTangentType)i;
                 }

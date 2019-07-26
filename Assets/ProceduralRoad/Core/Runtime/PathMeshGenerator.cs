@@ -11,9 +11,17 @@ namespace RoadGenerator
 
         [SerializeField] private PathData _pathData = new PathData();
         [SerializeField, Range(0.5f, 2.0f)] private float _widthMultiplier = 1.0f;
+        [SerializeField, Range(0.2f, 10.0f)] private float _uvResolution = 1.0f;
+        [SerializeField] private int _subdivisions = 5;
+        [SerializeField] private bool _loopTrack = false;
+
         private Mesh _currentMesh = null;
         private MeshRenderer _targetRenderer = null;
         private MeshFilter _targetFilter = null;
+
+        private int[] _trisDrawOrder = new int[6] { 0, 2, 1, 1, 2, 3 };
+
+        #region Accessors
 
         private MeshRenderer targetRenderer
         {
@@ -52,15 +60,30 @@ namespace RoadGenerator
             set { _widthMultiplier = Mathf.Clamp(value, 0.01f, value); }
         }
 
+        public int subdivisions
+        {
+            get { return _subdivisions; }
+            set { _subdivisions = Mathf.Clamp(value, 1, value); }
+        }
+
+        public float uvResolution
+        {
+            get { return _uvResolution; }
+            set { _uvResolution = Mathf.Clamp(value, 0.01f, value); }
+        }
+
+        public bool loopTrack { get { return _loopTrack; } set { _loopTrack = value; }}
+
+        #endregion
         #endregion
 
 
         #region Methods
         #region Lifecycle
 
-        private void Update()
+        private void Awake()
         {
-            targetFilter.mesh = GenerateRoadMesh(pathData);
+            UpdateRoad();
         }
 
         #endregion
@@ -78,35 +101,47 @@ namespace RoadGenerator
 
         private Mesh GenerateRoadMesh(PathData path)
         {
-            Vector3[] vertices = new Vector3[path.Length * 2];
+            Vector3[] vertices = new Vector3[2 * (path.Length + (_subdivisions - 1) * (path.Length - 1))];
             Vector2[] uvs = new Vector2[vertices.Length];
-            int[] triangles = new int[(path.Length - 1) * 6];
+            int[] triangles = new int[((path.Length - 1) * _subdivisions) * 6];
 
-            for(int p = 0, t = 0; p < path.Length; p++)
+            //Debug.Log(vertices.Length);
+
+            for(int p = 0, v = 0; p < path.Length - 1; p++)
             {
-                //Set vertices
-                Vector3 side = Vector3.Cross(path[p].normal, path[p].GetLocalSpaceTangent(PathTangentType.Out).normalized) * _widthMultiplier;
-                vertices[p * 2] = path[p].position - side;
-                vertices[p * 2 + 1] = path[p].position + side;
-
-                //uvs
-                uvs[p * 2] = new Vector2(0, (float)p / (float)path.Length * 4);
-                uvs[p * 2 + 1] = new Vector2(1, (float)p / (float)path.Length * 4 );
-
-                //Draws triangle
-                if(p > 0)
+                for(int i = p > 0 ? 1 : 0; i <= _subdivisions; i++)
                 {
-                    int vertIndex = (p - 1) * 2;
+                    //Set vertices
+                    float curveT = (float)i / (float)_subdivisions;
 
-                    triangles[t] = vertIndex;
-                    triangles[t + 1] = vertIndex + 2;
-                    triangles[t + 2] = vertIndex + 1;
-                    triangles[t + 3] = vertIndex + 1;
-                    triangles[t + 4] = vertIndex + 2;
-                    triangles[t + 5] = vertIndex + 3;
-                    t += 6;
+                    Vector3 side = Vector3.Cross(path[p].normal, path.GetDerivativeDirection(p, curveT)).normalized * _widthMultiplier;
+                    Vector3 bezierPos = path.GetBezierPosition(p, curveT);
+                    vertices[v * 2] = bezierPos - side;
+                    vertices[v * 2 + 1] = bezierPos + side;
+
+                    //Debug.DrawRay(transform.position + vertices[(v) * 2], Vector3.up, Color.red);
+                    //Debug.DrawRay(transform.position + vertices[(v) * 2 + 1], Vector3.up, Color.red);
+
+                    //Uvs
+                    float uvRes = ((float)v * _uvResolution)/_subdivisions;
+                    uvs[v * 2] = new Vector2(0, uvRes);
+                    uvs[v * 2 + 1] = new Vector2(1, uvRes);
+
+                    //Debug.Log(p + i);
+
+                    //Draws triangle
+                    if (v > 0)
+                    {
+                        int vertIndex = (v - 1) * 2;
+
+                        for (int tri = 0; tri < _trisDrawOrder.Length; tri++)
+                        {
+                            triangles[((v - 1) * 6) + tri] = vertIndex + _trisDrawOrder[tri];
+                        }
+                    }
+
+                    v++;
                 }
-
             }
 
             Mesh finalMesh = new Mesh();
@@ -123,8 +158,6 @@ namespace RoadGenerator
         }
 
         #endregion
-
         #endregion
-
     }
 }

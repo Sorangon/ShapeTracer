@@ -68,24 +68,30 @@ namespace RoadGenerator
         /// <param name="pointId">Point index</param>
         public void RemovePoint(int pointId)
         {
-            if(pointId > 0)
+            if(_path.Count > 2)
             {
-                _path.RemoveAt(pointId);
+                if (pointId > 0)
+                {
+                    _path.RemoveAt(pointId);
+                }
+                else
+                {
+                    Debug.LogWarning("This point doesn't exist");
+                }
             }
             else
             {
-                Debug.LogWarning("This point doesn't exist");
+                Debug.LogWarning("A path cannot have less than 2 point at least");
             }
-            Debug.Log("Remove Point");
         }
 
-        public Vector3 GetBezierPosition(int fromIndex, float t)
+        public Vector3 GetBezierPosition(int fromPoint, float t)
         {
             return GetBezierPosition
-                (_path[fromIndex].position,
-                _path[fromIndex].GetWorldSpaceTangent(PathTangentType.Out),
-                _path[fromIndex + 1].GetWorldSpaceTangent(PathTangentType.In), 
-                _path[fromIndex + 1].position, t);
+                (_path[fromPoint].position,
+                _path[fromPoint].GetWorldSpaceTangent(PathTangentType.Out),
+                _path[fromPoint + 1].GetWorldSpaceTangent(PathTangentType.In), 
+                _path[fromPoint + 1].position, t);
         }
 
         public Vector3 GetBezierPosition(Vector3 p0, Vector3 t0Out, Vector3 t1In, Vector3 p1, float t)
@@ -95,6 +101,25 @@ namespace RoadGenerator
                 + 3 * t0Out * t * oneMinusT * oneMinusT
                 + 3 * t1In * t * t * oneMinusT
                 + p1 * t * t * t;
+        }
+
+
+        public Vector3 GetDerivativeDirection(int fromPoint, float t)
+        {
+            return GetDerivativeDirection
+                (_path[fromPoint].position,
+                _path[fromPoint].GetWorldSpaceTangent(PathTangentType.Out),
+                _path[fromPoint + 1].GetWorldSpaceTangent(PathTangentType.In),
+                _path[fromPoint + 1].position, t);
+        }
+
+
+        public Vector3 GetDerivativeDirection(Vector3 p0, Vector3 t0Out, Vector3 t1In, Vector3 p1, float t)
+        {
+            float oneMinus = 1 - t;
+            return 3 * oneMinus * oneMinus * (t0Out - p0)
+                + 6 * oneMinus * t * (t1In - t0Out)
+                + 3 * t * t * (p1 - t1In);
         }
 
         #endregion
