@@ -6,7 +6,7 @@ using UnityEditor;
 
 namespace PathTracer
 {
-    public class RoadPointEditor : MonoBehaviour
+    public static class RoadPointEditor
     {
         #region Attributes
 
@@ -14,6 +14,7 @@ namespace PathTracer
         private static PathTangentType _selectedTangent =  (PathTangentType)(-1);
         private static PathMeshGenerator _currentPath = null;
         private static bool _displayNormal = false;
+        private static Tool _lastUsedTool = Tool.None;
 
         #region Accessors
         /// <summary> Current edited point id </summary>
@@ -85,8 +86,9 @@ namespace PathTracer
             EditorGUI.EndDisabledGroup();
 
             EditorGUILayout.EndHorizontal();
-            GUILayout.Space(3.0f);
+            GUILayout.Space(4.0f);
             GUILayout.EndVertical();
+            GUILayout.Space(15.0f);
         }
 
         /// <summary>
@@ -101,7 +103,19 @@ namespace PathTracer
                 DrawPoint(i, view);
             }
 
+            if (_selectedId >= 0 && Tools.current != Tool.None) //Locks the tool to none if a point is selected
+            {
+                Tools.current = Tool.None;
+            }
+
             _currentPath.UpdateRoad();
+        }
+
+        public static void Disable()
+        {
+            _selectedId = -1;
+            _currentPath = null;
+            DeselectPoint();
         }
 
 
@@ -127,6 +141,11 @@ namespace PathTracer
             if (Handles.Button(handlePosition, Quaternion.identity, 0.04f * cameraDistance, 0.05f * cameraDistance, Handles.SphereHandleCap))
             {
                 SelectPoint(index);
+
+                if(_lastUsedTool == Tool.None)
+                {
+                    _lastUsedTool = Tools.current;
+                }
             }
 
             if (_selectedId == index)
@@ -192,6 +211,11 @@ namespace PathTracer
         {
             _selectedId = index;
             _selectedTangent = (PathTangentType)(-1); //Resets selected tangent index
+        }
+
+        private static void DeselectPoint()
+        {
+            Tools.current = _lastUsedTool;
         }
 
         #endregion

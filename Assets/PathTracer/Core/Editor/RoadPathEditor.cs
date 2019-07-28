@@ -13,11 +13,14 @@ namespace PathTracer
 
         private PathMeshGenerator _currentPath = null;
         private bool _autoGenerateRoad = true;
-        private bool _editMode = false;
 
         #endregion
 
+        #region Events/Delegates
+        #endregion
+
         #region Methods
+
         #region LifeCycle
 
         private void OnEnable()
@@ -126,13 +129,16 @@ namespace PathTracer
         private void OnDisable()
         {
             _currentPath = null;
+            RoadPointEditor.Disable();
         }
 
 
         #endregion
+
         #region Private
 
         #endregion
+
         #endregion
     }
 }

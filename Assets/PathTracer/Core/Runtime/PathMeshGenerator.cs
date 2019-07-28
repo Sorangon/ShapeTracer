@@ -17,7 +17,6 @@ namespace PathTracer
         [SerializeField] private int _subdivisions = 5;
         [SerializeField] private bool _loopTrack = false;
 
-        private Mesh _currentMesh = null;
         private MeshRenderer _targetRenderer = null;
         private MeshFilter _targetFilter = null;
 
@@ -79,6 +78,7 @@ namespace PathTracer
         public bool loopTrack { get { return _loopTrack; } set { _loopTrack = value; }}
 
         #endregion
+
         #endregion
 
         #region Methods
@@ -136,13 +136,14 @@ namespace PathTracer
                     Vector3 normal = Quaternion.AngleAxis(angle, Vector3.back) * path[p].normal; //Calculates the normal
                     normal = Quaternion.LookRotation(derivative) * normal; //Applys derivative rotion to the normal
 
-                    Vector3 side = Vector3.Cross(normal, derivative) * _widthMultiplier;
+                    Quaternion rotation = Quaternion.LookRotation(derivative, normal);
 
                     //Debug.DrawRay(transform.position + path.GetBezierPosition(p, curveT), normal, Color.yellow);
                     
-                    vertices[v * 2] = bezierPos - side;
-                    vertices[v * 2 + 1] = bezierPos + side;
+                    vertices[v * 2] = bezierPos + rotation * ((Vector3)section.points[0] * _widthMultiplier);
+                    vertices[v * 2 + 1] = bezierPos + rotation * ((Vector3)section.points[1] * _widthMultiplier);
 
+                    //Debug.DrawRay(transform.position + vertices[(v) * 2], Vector3.up, Color.red);
                     //Debug.DrawRay(transform.position + vertices[(v) * 2 + 1], Vector3.up, Color.red);
 
                     //Uvs
