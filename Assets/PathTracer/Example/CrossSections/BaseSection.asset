@@ -14,7 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _crossSection:
     _points:
+    - {x: -1.2, y: 0.5}
     - {x: -1, y: 0}
     - {x: 1, y: 0}
-    - {x: 1, y: -0.2}
-    - {x: -1, y: -0.2}
+    - {x: 1.2, y: 0.5}
+    - {x: 1.4, y: 0.5}
+    - {x: 1.2, y: 0}
+    - {x: -1.2, y: 0}
+    - {x: -1.4, y: 0.5}
+    - {x: -1.2, y: 0.5}
+    _closeShape: 0

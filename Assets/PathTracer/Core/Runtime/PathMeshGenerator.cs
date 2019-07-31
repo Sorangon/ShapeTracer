@@ -115,14 +115,24 @@ namespace PathTracer
                 section = CrossSection.defaultSection;
             }
 
+            int sectionVertexCount = section.pointCount;
+
+            if(sectionVertexCount < 2)
+            {
+                Debug.LogWarning("Path cannot being generated, minimum 2 points are required");
+                return new Mesh();
+            }
+
             int points = path.Length + (_loopTrack ? 1 : 0);
-            Vector3[] vertices = new Vector3[2 * (points + (_subdivisions - 1) * (points - 1))];
+            Vector3[] vertices = new Vector3[sectionVertexCount * (points + (_subdivisions - 1) * (points - 1))];
             Vector2[] uvs = new Vector2[vertices.Length];
-            int[] triangles = new int[((points - 1) * _subdivisions) * 6];
+
+            int shapeClosure = section.closeShape ? 0 : 1;
+            int[] triangles = new int[((points - 1) * _subdivisions) * (6 * (sectionVertexCount - shapeClosure))];
 
             //Debug.Log(vertices.Length);
 
-            for(int p = 0, v = 0; p < points - 1; p++)
+            for(int p = 0, s = 0, t = 0; p < points - 1; p++)
             {
                 for(int i = p > 0 ? 1 : 0; i <= _subdivisions; i++)
                 {
@@ -136,35 +146,59 @@ namespace PathTracer
                     Vector3 normal = Quaternion.AngleAxis(angle, Vector3.back) * path[p].normal; //Calculates the normal
                     normal = Quaternion.LookRotation(derivative) * normal; //Applys derivative rotion to the normal
 
-                    Quaternion rotation = Quaternion.LookRotation(derivative, normal);
+                    Quaternion secRotation = Quaternion.LookRotation(derivative, normal);
 
                     //Debug.DrawRay(transform.position + path.GetBezierPosition(p, curveT), normal, Color.yellow);
                     
-                    vertices[v * 2] = bezierPos + rotation * ((Vector3)section.points[0] * _widthMultiplier);
-                    vertices[v * 2 + 1] = bezierPos + rotation * ((Vector3)section.points[1] * _widthMultiplier);
+                    float uvRes = ((float)s * _uvResolution) / _subdivisions;
 
-                    //Debug.DrawRay(transform.position + vertices[(v) * 2], Vector3.up, Color.red);
-                    //Debug.DrawRay(transform.position + vertices[(v) * 2 + 1], Vector3.up, Color.red);
 
-                    //Uvs
-                    float uvRes = ((float)v * _uvResolution)/_subdivisions;
-                    uvs[v * 2] = new Vector2(0, uvRes);
-                    uvs[v * 2 + 1] = new Vector2(1, uvRes);
-
-                    //Debug.Log(p + i);
+                    //Vertices and Uvs
+                    for (int vert = 0; vert < sectionVertexCount; vert++)
+                    {
+                        vertices[s * sectionVertexCount + vert] = bezierPos + secRotation * ((Vector3)section.points[vert] * _widthMultiplier);
+                        Debug.DrawRay(transform.position + vertices[s * sectionVertexCount + vert], Vector3.up, Color.red);
+                        uvs[s * sectionVertexCount + vert] = new Vector2(vert, uvRes);
+                    }
+                    
 
                     //Draws triangle
-                    if (v > 0)
+                    if (s > 0)
                     {
-                        int vertIndex = (v - 1) * 2;
+                        int subdivIndex = (s - 1) * sectionVertexCount;
 
-                        for (int tri = 0; tri < _trisDrawOrder.Length; tri++)
+                        for (int vert = 0; vert < sectionVertexCount - 1; vert++)
                         {
-                            triangles[((v - 1) * 6) + tri] = vertIndex + _trisDrawOrder[tri];
+                            for (int tri = 0; tri < _trisDrawOrder.Length; tri++)
+                            {
+                                int targetVert = _trisDrawOrder[tri];
+
+                                if (targetVert >= 2)
+                                {
+                                    targetVert += sectionVertexCount - 2;
+                                }
+
+                                int triId = t;
+                                triangles[triId] = subdivIndex + targetVert + vert;
+                                //Debug.Log("Bind triangle " + triId + " on vertice " + triangles[triId]);
+                                t++;
+
+                                //if (triId == triangles.Length - 1) Debug.Log(triangles.Length);
+                                //Debug.Log(triangles.Length);
+
+                                /* try
+                                 {
+
+                                 }
+                                 catch
+                                 {
+                                     Debug.Log((subdivIndex + targetVert) + " " + vertices.Length);
+                                 }*/
+                            }
                         }
                     }
 
-                    v++;
+                    s++;
                 }
             }
 

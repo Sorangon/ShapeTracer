@@ -114,7 +114,6 @@ namespace PathTracer
         public static void Disable()
         {
             _selectedId = -1;
-            _currentPath = null;
             DeselectPoint();
         }
 

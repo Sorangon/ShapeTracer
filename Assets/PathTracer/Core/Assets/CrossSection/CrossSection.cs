@@ -10,12 +10,28 @@ namespace PathTracer.CrossSectionUtility
         #region Attributes
 
         [SerializeField] private Vector2[] _points;
+        [SerializeField] private bool _closeShape;
 
         #region Accessors
 
         public Vector2[] points
         {
             get { return _points; }
+        }
+
+        public bool closeShape
+        {
+            get
+            {
+                if(_points.Length < 2)
+                {
+                    return false;
+                }
+                else
+                {
+                    return _closeShape;
+                }
+            }
         }
 
         public static CrossSection defaultSection
@@ -27,6 +43,11 @@ namespace PathTracer.CrossSectionUtility
             }
         }
 
+        public int pointCount
+        {
+            get { return _points.Length; }
+        }
+
         #endregion
         #endregion
 
@@ -35,6 +56,7 @@ namespace PathTracer.CrossSectionUtility
         public CrossSection(Vector2[] points)
         {
             _points = points;
+            _closeShape = false;
         }
 
 
