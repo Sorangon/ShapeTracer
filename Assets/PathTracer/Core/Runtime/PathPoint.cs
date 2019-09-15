@@ -23,6 +23,7 @@ namespace PathTracer
             set { _position = value; }
         }
 
+
         /// <summary> The normal of the point in world space </summary>
         public Vector3 normal
         {
@@ -39,7 +40,20 @@ namespace PathTracer
         public float normalAngle
         {
             get { return _normalAngle; }
-            set { _normalAngle = value; }
+            set
+            {
+                if(value > 180)
+                {
+                    value -= 360;
+                }
+                else if(value < -180)
+                {
+                    value += 360;
+                }
+
+
+                _normalAngle = value;
+            }
         }
 
         #endregion
@@ -85,15 +99,23 @@ namespace PathTracer
             }
         }
 
-        public void SetPointSpaceTangent(PathTangentType tangent,Vector3 newPos)
+        public void SetPointSpaceTangent(PathTangentType tangent,Vector3 newPos, bool mirrorTangents)
         {
             if (tangent == PathTangentType.In)
             {
                 _inTangent = newPos;
+                if (mirrorTangents)
+                {
+                    _outTangent = -_inTangent.normalized * _inTangent.magnitude;
+                }
             }
             else if(tangent == PathTangentType.Out)
             {
                 _outTangent = newPos;
+                if (mirrorTangents)
+                {
+                    _inTangent = -_outTangent.normalized * _outTangent.magnitude;
+                }
             }
         }
 
@@ -102,9 +124,9 @@ namespace PathTracer
             return GetPointSpaceTangent(tangent) + _position;
         }
 
-        public void SetObjectSpaceTangent(PathTangentType tangent, Vector3 newPos)
+        public void SetObjectSpaceTangent(PathTangentType tangent, Vector3 newPos, bool mirrorTangents)
         {
-            SetPointSpaceTangent(tangent, newPos - _position);
+            SetPointSpaceTangent(tangent, newPos - _position, mirrorTangents);
         }
 
         #endregion

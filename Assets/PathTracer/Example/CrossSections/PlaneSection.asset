@@ -15,4 +15,5 @@ MonoBehaviour:
   _crossSection:
     _points:
     - {x: -1, y: 0}
-    - {x: 1, y: 0}
+    - {x: 0.995, y: 0.01}
+    _closeShape: 0

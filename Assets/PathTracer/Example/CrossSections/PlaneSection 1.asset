@@ -10,17 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b42af5a6a35b009428858e90c34cad45, type: 3}
-  m_Name: BaseSection
+  m_Name: PlaneSection 1
   m_EditorClassIdentifier: 
   _crossSection:
     _points:
-    - {x: -1.2, y: 0.5}
     - {x: -1, y: 0}
-    - {x: 1, y: 0}
-    - {x: 1.2, y: 0.5}
-    - {x: 1.57, y: 0.505}
-    - {x: 1.15, y: -0.2}
-    - {x: -1.15, y: -0.2}
-    - {x: -1.56, y: 0.5}
-    - {x: -1.2, y: 0.5}
-    _closeShape: 1
+    - {x: 1.0002754, y: -0.0018778552}
+    _closeShape: 0

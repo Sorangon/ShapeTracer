@@ -34,12 +34,23 @@ namespace PathTracer
         {
             GUILayout.Space(5.0f);
 
+            EditorGUILayout.BeginHorizontal();
+            CrossSectionAsset crossSection = (CrossSectionAsset)EditorGUILayout.ObjectField(
+            "Cross Section", _currentPath.crossSection, typeof(CrossSectionAsset), false);
+            _currentPath.crossSection = crossSection;
+
+            if (GUILayout.Button("Edit", GUILayout.Width(60)) && crossSection != null)
+            {
+                CrossSectionEditorWindow.Edit(crossSection);
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(15);
+
             EditorGUI.BeginChangeCheck();
 
-            CrossSectionAsset crossSection = (CrossSectionAsset)EditorGUILayout.ObjectField(
-                "Cross Section", _currentPath.crossSection, typeof(CrossSectionAsset), false);
-
-            float widthMultiplier = EditorGUILayout.Slider("Width",_currentPath.widthMultiplier, 0.01f, 5.0f);
+            float widthMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Width",_currentPath.widthMultiplier),0.01f,1000);
             int subdivisions = EditorGUILayout.IntSlider("Subdivisions",_currentPath.subdivisions, 1, 25);
             float uvResolution = EditorGUILayout.Slider("Uv resolution",_currentPath.uvResolution, 0.2f, 10.0f);
             bool loopTrack = EditorGUILayout.Toggle("Loop track",_currentPath.loopTrack);
@@ -52,7 +63,6 @@ namespace PathTracer
                 _currentPath.subdivisions = subdivisions;
                 _currentPath.uvResolution = uvResolution;
                 _currentPath.loopTrack = loopTrack;
-                _currentPath.crossSection = crossSection;
             }
 
             GUILayout.Space(20);

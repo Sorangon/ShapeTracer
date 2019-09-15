@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-//using UnityEditor.SceneManagement;
 
 namespace PathTracer
 {
@@ -14,7 +13,6 @@ namespace PathTracer
         private static PathTangentType _selectedTangent =  (PathTangentType)(-1);
         private static PathMeshGenerator _currentPath = null;
         private static bool _displayNormal = false;
-        private static Tool _lastUsedTool = Tool.None;
 
         #region Accessors
         /// <summary> Current edited point id </summary>
@@ -24,8 +22,7 @@ namespace PathTracer
         #endregion
         #endregion
 
-        #region Methods
-        #region LifeCycle
+        #region Updates
 
         /// <summary>
         /// Initialize the editor
@@ -37,6 +34,15 @@ namespace PathTracer
             _currentPath = path;
         }
 
+        public static void Disable()
+        {
+            _selectedId = -1;
+            DeselectPoint();
+        }
+
+        #endregion
+
+        #region GUI Updates
         /// <summary>
         /// Draws the point editor on GUI
         /// </summary>
@@ -91,6 +97,9 @@ namespace PathTracer
             GUILayout.Space(15.0f);
         }
 
+        #endregion
+
+        #region Scene Updates
         /// <summary>
         /// Updates the scene editor
         /// </summary>
@@ -103,22 +112,17 @@ namespace PathTracer
                 DrawPoint(i, view);
             }
 
-            if (_selectedId >= 0 && Tools.current != Tool.None) //Locks the tool to none if a point is selected
+            /*if (_selectedId >= 0 && Tools.current != Tool.None) //Locks the tool to none if a point is selected
             {
                 Tools.current = Tool.None;
-            }
+            }*/
 
             _currentPath.UpdateRoad();
         }
 
-        public static void Disable()
-        {
-            _selectedId = -1;
-            DeselectPoint();
-        }
+        #endregion
 
-
-        #region Private
+        #region Draw Points
 
         private static void DrawPoint(int index, SceneView view)
         {
@@ -140,10 +144,9 @@ namespace PathTracer
             if (Handles.Button(handlePosition, Quaternion.identity, 0.04f * cameraDistance, 0.05f * cameraDistance, Handles.SphereHandleCap))
             {
                 SelectPoint(index);
-
-                if(_lastUsedTool == Tool.None)
+                if(Tools.hidden == false)
                 {
-                    _lastUsedTool = Tools.current;
+                    Tools.hidden = true;
                 }
             }
 
@@ -155,12 +158,13 @@ namespace PathTracer
 
         private static void DrawSelectedPointHandles(int selectedId, Vector3 handlePos, float cameraDistance)
         {
+            PathPoint point = _currentPath.pathData[selectedId];
             Handles.color = Color.yellow;
 
             //Draw tangents handles
             for(int i = 0; i < 2; i++)
             {
-                Vector3 tangentPos = _currentPath.transform.position + _currentPath.pathData[selectedId].GetObjectSpaceTangent((PathTangentType)i);
+                Vector3 tangentPos = _currentPath.transform.position + point.GetObjectSpaceTangent((PathTangentType)i);
                 Handles.DrawAAPolyLine(6,tangentPos, handlePos);
 
                 if (Handles.Button(tangentPos, Quaternion.identity, 0.03f * cameraDistance, 0.04f * cameraDistance, Handles.SphereHandleCap))
@@ -171,26 +175,34 @@ namespace PathTracer
 
             if (_selectedTangent < 0) //If no tangent is selected
             {
-                //Moves the point
-                _currentPath.pathData[selectedId].position = MovePoint(handlePos); 
+                switch (Tools.current)
+                {
+                    case Tool.Rotate:
+                        //Rotate the point roll and tangents
+                        SetPointRotation(_currentPath.pathData[selectedId]);
+                        break;
+
+                    default:
+                        //Moves curve the point
+                        point.position = MovePoint(handlePos);
+                        break;
+                }
             }
             else
             {
+                //Moves the curve tangent point
                 PathTangentType oppositeTangent = (PathTangentType)(1 - ((int)_selectedTangent));
                 handlePos = _currentPath.transform.position;
 
                 //Edits the position of the selected tangent
-                Vector3 newPos = MovePoint(_currentPath.pathData[selectedId].GetObjectSpaceTangent(_selectedTangent) + handlePos);
-                _currentPath.pathData[selectedId].SetObjectSpaceTangent(_selectedTangent, newPos);
-
-                //Mirrors the position of the opposite tangent
-                Vector3 mirrorTangentDir = -_currentPath.pathData[selectedId].GetPointSpaceTangent(_selectedTangent).normalized;
-                float mirrorTangentLength =  _currentPath.pathData[selectedId].GetPointSpaceTangent(oppositeTangent).magnitude;
-
-                _currentPath.pathData[selectedId].SetPointSpaceTangent(oppositeTangent, mirrorTangentDir * mirrorTangentLength);
+                Vector3 newPos = MovePoint(point.GetObjectSpaceTangent(_selectedTangent) + handlePos);
+                _currentPath.pathData[selectedId].SetObjectSpaceTangent(_selectedTangent, newPos, true);
             }          
         }
 
+        #endregion
+
+        #region Point Movement
         private static Vector3 MovePoint(Vector3 handlePos)
         {
             EditorGUI.BeginChangeCheck();
@@ -206,6 +218,34 @@ namespace PathTracer
         }
 
 
+        private static PathPoint SetPointRotation(PathPoint point)
+        {
+            EditorGUI.BeginChangeCheck();
+            Vector3 tangentDir = point.GetPointSpaceTangent(PathTangentType.Out);
+            Quaternion pivotRotation = Quaternion.LookRotation(tangentDir);
+                //Quaternion.AngleAxis(point.normalAngle, Vector3.forward) * Vector3.up);
+            Quaternion roll = Quaternion.AngleAxis(point.normalAngle, Vector3.back);
+
+            Vector3 pointWorldPos = point.position + _currentPath.transform.position;
+
+
+            Quaternion newRot = Handles.DoRotationHandle(pivotRotation * roll, pointWorldPos);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                point.normalAngle = -newRot.eulerAngles.z;
+                //point.SetPointSpaceTangent(PathTangentType.Out
+                    //, newRot * point.GetPointSpaceTangent(PathTangentType.Out), true);
+                Undo.RecordObject(_currentPath, "Rotate Point");
+                EditorUtility.SetDirty(_currentPath);
+            }
+
+            return point;
+        }
+
+        #endregion
+
+        #region Selection
         private static void SelectPoint(int index)
         {
             _selectedId = index;
@@ -214,11 +254,9 @@ namespace PathTracer
 
         private static void DeselectPoint()
         {
-            Tools.current = _lastUsedTool;
+            Tools.hidden = false;
         }
 
-        #endregion
-        #endregion
         #endregion
     }
 }

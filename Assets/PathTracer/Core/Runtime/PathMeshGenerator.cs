@@ -127,8 +127,9 @@ namespace PathTracer
             Vector3[] vertices = new Vector3[sectionVertexCount * (points + (_subdivisions - 1) * (points - 1))];
             Vector2[] uvs = new Vector2[vertices.Length];
 
-            int shapeClosure = section.closeShape ? 0 : 1;
-            int[] triangles = new int[((points - 1) * _subdivisions) * (6 * (sectionVertexCount - shapeClosure))];
+            //int shapeClosure = section.closeShape ? 0 : 1;    //Edge system required before
+
+            int[] triangles = new int[((points - 1) * _subdivisions) * (6 * (sectionVertexCount - 1))];
 
             //Debug.Log(vertices.Length);
 
@@ -152,16 +153,14 @@ namespace PathTracer
                     
                     float uvRes = ((float)s * _uvResolution) / _subdivisions;
 
-
                     //Vertices and Uvs
                     for (int vert = 0; vert < sectionVertexCount; vert++)
                     {
                         vertices[s * sectionVertexCount + vert] = bezierPos + secRotation * ((Vector3)section.points[vert] * _widthMultiplier);
-                        Debug.DrawRay(transform.position + vertices[s * sectionVertexCount + vert], Vector3.up, Color.red);
+                        //Debug.DrawRay(transform.position + vertices[s * sectionVertexCount + vert], Vector3.up, Color.red);
                         uvs[s * sectionVertexCount + vert] = new Vector2(vert, uvRes);
                     }
                     
-
                     //Draws triangle
                     if (s > 0)
                     {
@@ -177,23 +176,9 @@ namespace PathTracer
                                 {
                                     targetVert += sectionVertexCount - 2;
                                 }
+                                triangles[t] = subdivIndex + targetVert + vert;
 
-                                int triId = t;
-                                triangles[triId] = subdivIndex + targetVert + vert;
-                                //Debug.Log("Bind triangle " + triId + " on vertice " + triangles[triId]);
                                 t++;
-
-                                //if (triId == triangles.Length - 1) Debug.Log(triangles.Length);
-                                //Debug.Log(triangles.Length);
-
-                                /* try
-                                 {
-
-                                 }
-                                 catch
-                                 {
-                                     Debug.Log((subdivIndex + targetVert) + " " + vertices.Length);
-                                 }*/
                             }
                         }
                     }
