@@ -9,15 +9,16 @@ namespace PathTracer.CrossSectionUtility
     {
         #region Attributes
 
-        [SerializeField] private CrossSection _crossSection = CrossSection.defaultSection;
+        [SerializeField] public CrossSection crossSection = CrossSection.defaultSection;
 
 
         #region Accessors
 
-        public CrossSection crossSection
+        /*public CrossSection crossSection
         {
             get { return _crossSection; }
-        }
+            set { _crossSection = value; }
+        }*/
 
         #endregion
         #endregion

@@ -127,9 +127,9 @@ namespace PathTracer
             Vector3[] vertices = new Vector3[sectionVertexCount * (points + (_subdivisions - 1) * (points - 1))];
             Vector2[] uvs = new Vector2[vertices.Length];
 
-            //int shapeClosure = section.closeShape ? 0 : 1;    //Edge system required before
+            int shapeClosure = section.closeShape ? 0 : 1;    //Edge system required before
 
-            int[] triangles = new int[((points - 1) * _subdivisions) * (6 * (sectionVertexCount - 1))];
+            int[] triangles = new int[((points - 1) * _subdivisions) * (6 * (sectionVertexCount - shapeClosure))];
 
             //Debug.Log(vertices.Length);
 
@@ -164,9 +164,9 @@ namespace PathTracer
                     //Draws triangle
                     if (s > 0)
                     {
-                        int subdivIndex = (s - 1) * sectionVertexCount;
+                        int subdivIndex = (s - 1) * (sectionVertexCount);
 
-                        for (int vert = 0; vert < sectionVertexCount - 1; vert++)
+                        for (int vert = 0; vert < sectionVertexCount - shapeClosure; vert++)
                         {
                             for (int tri = 0; tri < _trisDrawOrder.Length; tri++)
                             {
@@ -175,8 +175,19 @@ namespace PathTracer
                                 if (targetVert >= 2)
                                 {
                                     targetVert += sectionVertexCount - 2;
+                                }                             
+
+                                if(vert != sectionVertexCount - 1 || (_trisDrawOrder[tri] == 0|| _trisDrawOrder[tri] == 2))
+                                {
+                                    targetVert = subdivIndex + targetVert + vert;
                                 }
-                                triangles[t] = subdivIndex + targetVert + vert;
+                                else if(vert == sectionVertexCount - 1 && (_trisDrawOrder[tri] == 1 || _trisDrawOrder[tri] == 3))
+                                {
+                                    targetVert = subdivIndex + targetVert - 1;
+                                }
+
+                                //if(vert == sectionVertexCount - 1) Debug.Log("Loop vertice to : " + (subdivIndex + targetVert) + " at order " + tri);
+                                triangles[t] = targetVert;
 
                                 t++;
                             }

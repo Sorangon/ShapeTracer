@@ -32,6 +32,10 @@ namespace PathTracer.CrossSectionUtility
                     return _closeShape;
                 }
             }
+            set
+            {
+                _closeShape = value;
+            }
         }
 
         public static CrossSection defaultSection

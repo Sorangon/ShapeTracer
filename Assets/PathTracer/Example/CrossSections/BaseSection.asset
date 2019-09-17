@@ -12,15 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b42af5a6a35b009428858e90c34cad45, type: 3}
   m_Name: BaseSection
   m_EditorClassIdentifier: 
-  _crossSection:
+  crossSection:
     _points:
-    - {x: -1.2, y: 0.5}
-    - {x: -1, y: 0}
-    - {x: 1, y: 0}
-    - {x: 1.2, y: 0.5}
-    - {x: 1.57, y: 0.505}
-    - {x: 1.15, y: -0.2}
-    - {x: -1.15, y: -0.2}
-    - {x: -1.56, y: 0.5}
-    - {x: -1.2, y: 0.5}
+    - {x: -0.9575, y: 0.0025}
+    - {x: 0.9925, y: 0.0025}
+    - {x: 0.0975, y: -0.425}
+    - {x: 0.0075, y: -1.02}
     _closeShape: 1

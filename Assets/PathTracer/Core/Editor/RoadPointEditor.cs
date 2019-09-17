@@ -49,7 +49,7 @@ namespace PathTracer
         public static void EditPointGUI(int index)
         {
             GUILayout.Space(10.0f);
-            GUILayout.BeginVertical("Box");
+            GUILayout.BeginVertical("HelpBox");
             GUILayout.Space(3.0f);
 
             GUIStyle labelStyle = new GUIStyle();

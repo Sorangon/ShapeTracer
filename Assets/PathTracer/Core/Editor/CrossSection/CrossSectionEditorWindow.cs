@@ -39,12 +39,18 @@ namespace PathTracer.CrossSectionUtility
 
         #endregion
 
-        #region Methods
-        #region GUICycle
+        #region Constants
+
+        private const float TOP_BUTTON_HEIGHT = 35.0f;
+
+        #endregion
+
+        #region Init/Disable
 
         private void OnEnable()
         {
             _isActive = true;
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
         }
 
         public static void Edit(CrossSectionAsset asset)
@@ -56,39 +62,52 @@ namespace PathTracer.CrossSectionUtility
             _selectedId = -1;
         }
 
+       
+        private void OnDisable()
+        {
+            _isActive = false;
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+        }
+
+
+        #endregion
+
+        #region GUI
+
         private void OnGUI()
         {
             Rect windowRect = new Rect(0, 0, position.width, position.height);
             GUI.DrawTexture(windowRect, _backgroundTexture, ScaleMode.StretchToFill);
 
-            DrawGrid(_pixelsPerUnit/10, 0.1f, false);
+            DrawGrid(_pixelsPerUnit / 10, 0.1f, false);
             DrawGrid(_pixelsPerUnit, 0.2f, true);
 
             Event e = Event.current;
 
             if (_target == null) return;
 
-            if(e.isScrollWheel) //Zoom
+            if (e.isScrollWheel) //Zoom
             {
                 float zoom = Event.current.delta.y;
-                _pixelsPerUnit = Mathf.Clamp(_pixelsPerUnit - zoom * 3,10, 1000);
+                _pixelsPerUnit = Mathf.Clamp(_pixelsPerUnit - zoom * 3, 10, 1000);
                 Repaint();
                 e.Use();
             }
-            else if(e.button == 2 && e.type == EventType.MouseDrag) //Pan view
+            else if (e.button == 2 && e.type == EventType.MouseDrag) //Pan view
             {
                 _center += e.delta;
                 Repaint();
                 e.Use();
             }
 
-            for(int i = 0; i < _target.crossSection.pointCount; i++)
+            for (int i = 0; i < _target.crossSection.pointCount; i++)
             {
                 DisplayPoints(i);
             }
 
+
             //Point settings window
-            if(_selectedId >= 0)
+            if (_selectedId >= 0)
             {
                 BeginWindows();
                 GUI.Window(0, new Rect(position.width - 200, position.height - 100, 180, 80), DisplayPointSettingsWindow, "Point Settings");
@@ -98,13 +117,9 @@ namespace PathTracer.CrossSectionUtility
             DrawToolPannel();
         }
 
-        private void OnDisable()
-        {
-            _isActive = false;
-        }
-
 
         #endregion
+
         #region Points GUI
 
         private void DisplayPoints(int index)
@@ -119,17 +134,20 @@ namespace PathTracer.CrossSectionUtility
                 Handles.color = Color.green;
 
                 EditorGUI.BeginChangeCheck();
-                Vector2 newPos = Handles.Slider2D(pointPos, Vector3.forward,
+                Handles.Slider2D(pointPos, Vector3.forward,
                     Vector2.up, Vector2.right, 12.0f, Handles.CircleHandleCap, Vector2.one * 100.0f); //Point drag handle
 
                 //newPos = new Vector2(Mathf.Round())
+
+                Event e = Event.current;
 
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(_target, "Move Cross Section Point");
                     EditorUtility.SetDirty(_target);
-
-                    newPos.y = newPos.y * -1 + position.height; //Invert the y to match with GUI
+                    Vector2 newPos = e.mousePosition;
+                    newPos.y = position.height - newPos.y;
+                    //newPos.y = newPos.y * -1 + position.height; //Invert the y to match with GUI
                     _target.crossSection.points[index] = (newPos - _center) / _pixelsPerUnit;
                 }
             }
@@ -150,6 +168,16 @@ namespace PathTracer.CrossSectionUtility
                 Vector2 previousPoint = new Vector2(_target.crossSection.points[index - 1].x, -_target.crossSection.points[index - 1].y);
                 Handles.DrawLine(pointPos, previousPoint * _pixelsPerUnit + _center);
             }
+            else if (index == 0 && _target.crossSection.closeShape && _target.crossSection.pointCount > 2)
+            {
+                Handles.color = Color.gray;
+                Vector2 lastPoint = 
+                    new Vector2(_target.crossSection.points[_target.crossSection.pointCount - 1].x
+                    , -_target.crossSection.points[_target.crossSection.pointCount - 1].y);
+                Handles.DrawLine(pointPos, lastPoint * _pixelsPerUnit + _center);
+            }
+
+            
 
             Handles.EndGUI();
         }
@@ -172,21 +200,28 @@ namespace PathTracer.CrossSectionUtility
         /// </summary>
         private void DrawToolPannel()
         {
+
             GUILayout.Space(10);
 
             EditorGUILayout.BeginHorizontal();
 
             GUILayout.Space(10);
-            if(GUILayout.Button("Add Point", GUILayout.Width(75), GUILayout.Height(30f)))
+            if(GUILayout.Button("Draw Points", GUILayout.Width(85), GUILayout.Height(TOP_BUTTON_HEIGHT)))
             {
                 AddPoint();
             }
 
             GUILayout.Space(10);
-            if (GUILayout.Button("Remove Point", GUILayout.Width(95), GUILayout.Height(30f)))
+            if (GUILayout.Button("Remove Point", GUILayout.Width(95), GUILayout.Height(TOP_BUTTON_HEIGHT)))
             {
                 RemovePoint();
             }
+
+            GUILayout.Space(10);
+
+            _target.crossSection.closeShape =
+                GUILayout.Toggle(_target.crossSection.closeShape, "Close Shape", "Button",
+                GUILayout.Width(85), GUILayout.Height(TOP_BUTTON_HEIGHT));
 
             EditorGUILayout.EndHorizontal();
         }
@@ -238,6 +273,14 @@ namespace PathTracer.CrossSectionUtility
             Handles.EndGUI();
         }
         #endregion
+
+        #region Events
+
+        private void OnUndoRedoPerformed()
+        {
+            Repaint();
+        }
+
         #endregion
     }
 }
