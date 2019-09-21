@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace PathTracer
+namespace ShapeTracer
 {
     [System.Serializable]
     public class PathPoint
@@ -99,22 +99,33 @@ namespace PathTracer
             }
         }
 
-        public void SetPointSpaceTangent(PathTangentType tangent,Vector3 newPos, bool mirrorTangents)
+        public void SetPointSpaceTangent(PathTangentType tangent,Vector3 newPos, bool mirrorTangents, bool mirrorScale)
         {
             if (tangent == PathTangentType.In)
             {
                 _inTangent = newPos;
                 if (mirrorTangents)
                 {
-                    _outTangent = -_inTangent.normalized * _inTangent.magnitude;
+                    _outTangent = -_inTangent.normalized * _outTangent.magnitude;
                 }
+
+                if (mirrorScale)
+                {
+                    _outTangent = _outTangent.normalized * _inTangent.magnitude;
+                }
+
             }
             else if(tangent == PathTangentType.Out)
             {
                 _outTangent = newPos;
                 if (mirrorTangents)
                 {
-                    _inTangent = -_outTangent.normalized * _outTangent.magnitude;
+                    _inTangent = -_outTangent.normalized * _inTangent.magnitude;
+                }
+
+                if (mirrorScale)
+                {
+                    _inTangent = _inTangent.normalized * _outTangent.magnitude;
                 }
             }
         }
@@ -124,9 +135,9 @@ namespace PathTracer
             return GetPointSpaceTangent(tangent) + _position;
         }
 
-        public void SetObjectSpaceTangent(PathTangentType tangent, Vector3 newPos, bool mirrorTangents)
+        public void SetObjectSpaceTangent(PathTangentType tangent, Vector3 newPos, bool mirrorTangents, bool mirrorScale)
         {
-            SetPointSpaceTangent(tangent, newPos - _position, mirrorTangents);
+            SetPointSpaceTangent(tangent, newPos - _position, mirrorTangents, mirrorScale);
         }
 
         #endregion

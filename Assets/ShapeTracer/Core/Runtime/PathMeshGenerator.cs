@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-using PathTracer.Shapes;
+using ShapeTracer.Shapes;
 
-namespace PathTracer
+namespace ShapeTracer
 {
     [RequireComponent(typeof(MeshRenderer)), RequireComponent(typeof(MeshFilter))]
     public class PathMeshGenerator : MonoBehaviour
@@ -56,7 +56,7 @@ namespace PathTracer
             get { return _pathData; }
         }
 
-        public ShapeAsset crossSection { get { return _crossSectionAsset; } set { _crossSectionAsset = value; } }
+        public ShapeAsset shapeAsset { get { return _crossSectionAsset; } set { _crossSectionAsset = value; } }
 
         public float widthMultiplier
         {
@@ -83,27 +83,28 @@ namespace PathTracer
         #endregion
 
         #region Methods
+
         #region Lifecycle
 
         private void Awake()
         {
-            UpdateRoad();
+            UpdatePath();
         }
 
         #endregion
 
         #region Public
 
-        public void UpdateRoad()
+        public void UpdatePath()
         {
-            targetFilter.mesh = GenerateRoadMesh(pathData);
+            targetFilter.mesh = GeneratePathMesh(pathData);
         }
 
         #endregion
 
         #region Private
 
-        private Mesh GenerateRoadMesh(PathData path)
+        private Mesh GeneratePathMesh(PathData path)
         {
             Shape section;
 
@@ -158,7 +159,7 @@ namespace PathTracer
                     for (int vert = 0; vert < sectionVertexCount; vert++)
                     {
                         vertices[s * sectionVertexCount + vert] = bezierPos + secRotation * ((Vector3)section.GetPointPosition(vert) * _widthMultiplier);
-                        uvs[s * sectionVertexCount + vert] = new Vector2((float)vert/ sectionVertexCount, uvRes);
+                        uvs[s * sectionVertexCount + vert] = new Vector2(vert, uvRes);
                     }
                     
                     //Draws triangle
@@ -212,6 +213,7 @@ namespace PathTracer
         }
 
         #endregion
+
         #endregion
     }
 }

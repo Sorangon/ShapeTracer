@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace PathTracer.Shapes
+namespace ShapeTracer.Shapes
 {
     [CreateAssetMenu(fileName = "NewShape",menuName = "Path Tracer/Shape", order = 100)]
     public class ShapeAsset : ScriptableObject

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace PathTracer
+namespace ShapeTracer
 {
-    public static class RoadPointEditor
+    public static class PathPointEditor
     {
         #region Attributes
 
@@ -117,7 +117,7 @@ namespace PathTracer
                 Tools.current = Tool.None;
             }*/
 
-            _currentPath.UpdateRoad();
+            _currentPath.UpdatePath();
         }
 
         #endregion
@@ -196,7 +196,7 @@ namespace PathTracer
 
                 //Edits the position of the selected tangent
                 Vector3 newPos = MovePoint(point.GetObjectSpaceTangent(_selectedTangent) + handlePos);
-                _currentPath.pathData[selectedId].SetObjectSpaceTangent(_selectedTangent, newPos, true);
+                _currentPath.pathData[selectedId].SetObjectSpaceTangent(_selectedTangent, newPos, true, false);
             }          
         }
 

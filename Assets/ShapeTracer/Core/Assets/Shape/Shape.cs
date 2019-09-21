@@ -4,7 +4,7 @@ using UnityEngine;
 using System.Linq;
 using System;
 
-namespace PathTracer.Shapes
+namespace ShapeTracer.Shapes
 {
     [System.Serializable]
     public struct Shape

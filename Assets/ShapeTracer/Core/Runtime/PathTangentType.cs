@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace PathTracer
+namespace ShapeTracer
 {
     public enum PathTangentType
     {

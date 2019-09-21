@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
 
-namespace PathTracer.Shapes
+namespace ShapeTracer.Shapes
 {
     [CustomEditor(typeof(ShapeAsset))]
     public class ShapeInspector : Editor

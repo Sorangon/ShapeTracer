@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using PathTracer.Shapes;
+using ShapeTracer.Shapes;
 
-namespace PathTracer
+namespace ShapeTracer
 {
     [CustomEditor(typeof(PathMeshGenerator))]
-    public class RoadPathEditor : Editor
+    public class PathEditor : Editor
     {
         #region Attributes
 
@@ -27,7 +27,7 @@ namespace PathTracer
         {
             _currentPath = (PathMeshGenerator)target;
 
-            RoadPointEditor.Init(_currentPath);
+            PathPointEditor.Init(_currentPath);
         }
 
         public override void OnInspectorGUI()
@@ -36,8 +36,8 @@ namespace PathTracer
 
             EditorGUILayout.BeginHorizontal();
             ShapeAsset crossSection = (ShapeAsset)EditorGUILayout.ObjectField(
-            "Shape", _currentPath.crossSection, typeof(ShapeAsset), false);
-            _currentPath.crossSection = crossSection;
+            "Shape", _currentPath.shapeAsset, typeof(ShapeAsset), false);
+            _currentPath.shapeAsset = crossSection;
 
             if (GUILayout.Button("Edit", GUILayout.Width(60)) && crossSection != null)
             {
@@ -69,9 +69,9 @@ namespace PathTracer
 
             for (int i = 0; i < _currentPath.pathData.Length; i++)
             {
-                if (RoadPointEditor.selectedId == i)
+                if (PathPointEditor.selectedId == i)
                 {
-                    RoadPointEditor.EditPointGUI(i);
+                    PathPointEditor.EditPointGUI(i);
                 }
             }
 
@@ -87,7 +87,7 @@ namespace PathTracer
             {
                 Undo.RecordObject(_currentPath, "Remove point");
                 EditorUtility.SetDirty(_currentPath);
-                _currentPath.pathData.RemovePoint(RoadPointEditor.selectedId);
+                _currentPath.pathData.RemovePoint(PathPointEditor.selectedId);
                 SceneView.RepaintAll();
             }
 
@@ -97,7 +97,7 @@ namespace PathTracer
 
             if (!_autoGenerateRoad && GUILayout.Button("Generate Road"))
             {
-                _currentPath.UpdateRoad();
+                _currentPath.UpdatePath();
                 SceneView.RepaintAll();
             }
         }
@@ -106,7 +106,7 @@ namespace PathTracer
         {
             if (_autoGenerateRoad == true)
             {           
-                RoadPointEditor.OnSceneUpdate(SceneView.lastActiveSceneView);
+                PathPointEditor.OnSceneUpdate(SceneView.lastActiveSceneView);
             }
 
             //Draws bezier curve
@@ -139,7 +139,7 @@ namespace PathTracer
         private void OnDisable()
         {
             _currentPath = null;
-            RoadPointEditor.Disable();
+            PathPointEditor.Disable();
         }
 
 
