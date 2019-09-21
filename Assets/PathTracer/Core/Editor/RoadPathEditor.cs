@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using PathTracer.CrossSectionUtility;
+using PathTracer.Shapes;
 
 namespace PathTracer
 {
@@ -35,13 +35,13 @@ namespace PathTracer
             GUILayout.Space(5.0f);
 
             EditorGUILayout.BeginHorizontal();
-            CrossSectionAsset crossSection = (CrossSectionAsset)EditorGUILayout.ObjectField(
-            "Cross Section", _currentPath.crossSection, typeof(CrossSectionAsset), false);
+            ShapeAsset crossSection = (ShapeAsset)EditorGUILayout.ObjectField(
+            "Shape", _currentPath.crossSection, typeof(ShapeAsset), false);
             _currentPath.crossSection = crossSection;
 
             if (GUILayout.Button("Edit", GUILayout.Width(60)) && crossSection != null)
             {
-                CrossSectionEditorWindow.Edit(crossSection);
+                ShapeEditorWindow.Edit(crossSection);
             }
 
             EditorGUILayout.EndHorizontal();

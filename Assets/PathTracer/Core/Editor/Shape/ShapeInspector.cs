@@ -4,14 +4,14 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
 
-namespace PathTracer.CrossSectionUtility
+namespace PathTracer.Shapes
 {
-    [CustomEditor(typeof(CrossSectionAsset))]
-    public class CrossSectionInspector : Editor
+    [CustomEditor(typeof(ShapeAsset))]
+    public class ShapeInspector : Editor
     {
         #region Attributes
 
-        private static CrossSectionAsset _target = null;
+        private static ShapeAsset _target = null;
 
         #endregion
 
@@ -19,19 +19,19 @@ namespace PathTracer.CrossSectionUtility
 
         private void OnEnable()
         {
-            _target = (CrossSectionAsset)target;
+            _target = (ShapeAsset)target;
 
-            if (CrossSectionEditorWindow.isActive)
+            if (ShapeEditorWindow.isActive)
             {
-                CrossSectionEditorWindow.Edit(_target);
+                ShapeEditorWindow.Edit(_target);
             }
         }
 
         public override void OnInspectorGUI()
         {
-            if (GUILayout.Button("Open Cross Section Editor"))
+            if (GUILayout.Button("Open Shape Editor"))
             {
-                CrossSectionEditorWindow.Edit(_target);
+                ShapeEditorWindow.Edit(_target);
             }
         }
 

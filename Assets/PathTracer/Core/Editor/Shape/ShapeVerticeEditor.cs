@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-public class CrossSectionVerticeEditor
+public class ShapeVerticeEditor
 {
     #region Attributes
 

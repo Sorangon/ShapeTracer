@@ -1,7 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using PathTracer.CrossSectionUtility;
+using UnityEngine.Rendering;
+using PathTracer.Shapes;
 
 namespace PathTracer
 {
@@ -10,7 +11,7 @@ namespace PathTracer
     {
         #region Attributes
 
-        [SerializeField] private CrossSectionAsset _crossSectionAsset = null;
+        [SerializeField] private ShapeAsset _crossSectionAsset = null;
         [SerializeField] private PathData _pathData = new PathData();
         [SerializeField, Range(0.5f, 2.0f)] private float _widthMultiplier = 1.0f;
         [SerializeField, Range(0.2f, 10.0f)] private float _uvResolution = 1.0f;
@@ -55,7 +56,7 @@ namespace PathTracer
             get { return _pathData; }
         }
 
-        public CrossSectionAsset crossSection { get { return _crossSectionAsset; } set { _crossSectionAsset = value; } }
+        public ShapeAsset crossSection { get { return _crossSectionAsset; } set { _crossSectionAsset = value; } }
 
         public float widthMultiplier
         {
@@ -104,15 +105,15 @@ namespace PathTracer
 
         private Mesh GenerateRoadMesh(PathData path)
         {
-            CrossSection section;
+            Shape section;
 
             if(_crossSectionAsset != null)
             {
-                section = _crossSectionAsset.crossSection;
+                section = _crossSectionAsset.shape;
             }
             else
             {
-                section = CrossSection.defaultSection;
+                section = Shape.defaultShape;
             }
 
             int sectionVertexCount = section.pointCount;
@@ -127,7 +128,7 @@ namespace PathTracer
             Vector3[] vertices = new Vector3[sectionVertexCount * (points + (_subdivisions - 1) * (points - 1))];
             Vector2[] uvs = new Vector2[vertices.Length];
 
-            int shapeClosure = section.closeShape ? 0 : 1;    //Edge system required before
+            int shapeClosure = 1;
 
             int[] triangles = new int[((points - 1) * _subdivisions) * (6 * (sectionVertexCount - shapeClosure))];
 
@@ -145,7 +146,7 @@ namespace PathTracer
 
                     float angle = Mathf.Lerp(path[p].normalAngle, path[p + 1].normalAngle, curveT); //Gets the normal angle
                     Vector3 normal = Quaternion.AngleAxis(angle, Vector3.back) * path[p].normal; //Calculates the normal
-                    normal = Quaternion.LookRotation(derivative) * normal; //Applys derivative rotion to the normal
+                    normal = Quaternion.LookRotation(derivative) * normal; //Applys derivative rotation to the normal
 
                     Quaternion secRotation = Quaternion.LookRotation(derivative, normal);
 
@@ -156,9 +157,8 @@ namespace PathTracer
                     //Vertices and Uvs
                     for (int vert = 0; vert < sectionVertexCount; vert++)
                     {
-                        vertices[s * sectionVertexCount + vert] = bezierPos + secRotation * ((Vector3)section.points[vert] * _widthMultiplier);
-                        //Debug.DrawRay(transform.position + vertices[s * sectionVertexCount + vert], Vector3.up, Color.red);
-                        uvs[s * sectionVertexCount + vert] = new Vector2(vert, uvRes);
+                        vertices[s * sectionVertexCount + vert] = bezierPos + secRotation * ((Vector3)section.GetPointPosition(vert) * _widthMultiplier);
+                        uvs[s * sectionVertexCount + vert] = new Vector2((float)vert/ sectionVertexCount, uvRes);
                     }
                     
                     //Draws triangle

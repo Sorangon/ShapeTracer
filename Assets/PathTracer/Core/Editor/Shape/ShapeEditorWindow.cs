@@ -3,17 +3,33 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace PathTracer.CrossSectionUtility
+namespace PathTracer.Shapes
 {
-    public class CrossSectionEditorWindow : EditorWindow
+    public class ShapeEditorWindow : EditorWindow
     {
         #region Attributes
 
-        private static CrossSectionAsset _target = null;
+        private static ShapeAsset _target = null;
         private static bool _isActive = false;
         private static float _pixelsPerUnit = 200.0f;
         private static Vector2 _center = Vector2.zero;
+
         private static int _selectedId = -1;
+        private static int selectedId
+        {
+            get
+            {
+                if(_selectedId > _target.shape.pointCount - 1)
+                {
+                    return -1; //reset
+                }
+                else
+                {
+                    return _selectedId;
+                }
+            }
+            set { _selectedId = value; }
+        }
 
         private Texture2D _bTex;
         private Texture2D _backgroundTexture
@@ -53,13 +69,13 @@ namespace PathTracer.CrossSectionUtility
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
         }
 
-        public static void Edit(CrossSectionAsset asset)
+        public static void Edit(ShapeAsset asset)
         {
-            CrossSectionEditorWindow current = GetWindow<CrossSectionEditorWindow>("Cross Section Editor");
+            ShapeEditorWindow current = GetWindow<ShapeEditorWindow>("Shape Editor");
             _target = asset;
             current.Show();
             _center = new Vector2(current.position.width / 2, current.position.height / 2);
-            _selectedId = -1;
+            selectedId = -1;
         }
 
        
@@ -81,10 +97,37 @@ namespace PathTracer.CrossSectionUtility
 
             DrawGrid(_pixelsPerUnit / 10, 0.1f, false);
             DrawGrid(_pixelsPerUnit, 0.2f, true);
-
-            Event e = Event.current;
+            WindowNavigation();
 
             if (_target == null) return;
+
+            int pointsToDisplay = _target.shape.pointCount - (_target.shape.closeShape ? 1 : 0);
+            for (int i = 0; i < pointsToDisplay; i++)
+            {
+                DisplayPoints(i);
+            }
+
+            DisplayEdges();
+
+            //Point settings window
+            if (selectedId >= 0)
+            {
+                BeginWindows();
+                GUI.Window(0, new Rect(position.width - 200, position.height - 100, 180, 80), DisplayPointSettingsWindow, "Point Settings");
+                EndWindows();
+            }
+
+            DrawToolPannel();
+        }
+
+
+        #endregion
+
+        #region Window Navigation
+
+        private void WindowNavigation()
+        {
+            Event e = Event.current;
 
             if (e.isScrollWheel) //Zoom
             {
@@ -99,24 +142,7 @@ namespace PathTracer.CrossSectionUtility
                 Repaint();
                 e.Use();
             }
-
-            for (int i = 0; i < _target.crossSection.pointCount; i++)
-            {
-                DisplayPoints(i);
-            }
-
-
-            //Point settings window
-            if (_selectedId >= 0)
-            {
-                BeginWindows();
-                GUI.Window(0, new Rect(position.width - 200, position.height - 100, 180, 80), DisplayPointSettingsWindow, "Point Settings");
-                EndWindows();
-            }
-
-            DrawToolPannel();
         }
-
 
         #endregion
 
@@ -126,16 +152,15 @@ namespace PathTracer.CrossSectionUtility
         {
             Handles.BeginGUI();
 
-            Vector2 pointPos = new Vector2(_target.crossSection.points[index].x, -_target.crossSection.points[index].y);
-            pointPos = pointPos * _pixelsPerUnit + _center;
+            Vector2 pointPos = PointSpaceToWindowSpace(_target.shape.GetPointPosition(index));
 
-            if (index == _selectedId)
+            if (index == selectedId)
             {
                 Handles.color = Color.green;
 
                 EditorGUI.BeginChangeCheck();
-                Handles.Slider2D(pointPos, Vector3.forward,
-                    Vector2.up, Vector2.right, 12.0f, Handles.CircleHandleCap, Vector2.one * 100.0f); //Point drag handle
+                Vector2 newPos = Handles.Slider2D(pointPos, Vector3.forward,
+                    Vector2.up, Vector2.right, 8.0f, Handles.DotHandleCap, Vector2.one * 100.0f); //Point drag handle
 
                 //newPos = new Vector2(Mathf.Round())
 
@@ -143,12 +168,11 @@ namespace PathTracer.CrossSectionUtility
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(_target, "Move Cross Section Point");
+                    Undo.RecordObject(_target, "Move Shape Point");
                     EditorUtility.SetDirty(_target);
-                    Vector2 newPos = e.mousePosition;
-                    newPos.y = position.height - newPos.y;
-                    //newPos.y = newPos.y * -1 + position.height; //Invert the y to match with GUI
-                    _target.crossSection.points[index] = (newPos - _center) / _pixelsPerUnit;
+
+                    newPos = WindowSpaceToPointSpace(newPos);
+                    _target.shape.SetPointPosition(index, newPos);
                 }
             }
             else
@@ -156,31 +180,35 @@ namespace PathTracer.CrossSectionUtility
                 Handles.color = Color.white;
                 if (Handles.Button(pointPos, Quaternion.identity, 4f, 6f, Handles.DotHandleCap))
                 {
-                    _selectedId = index;
+                    selectedId = index;
                     Repaint();
                 }
             }
 
+            Handles.EndGUI();
+        }
+
+        /// <summary>
+        /// Displays the edges of all points
+        /// </summary>
+        private void DisplayEdges()
+        {
+            Handles.BeginGUI();
+
             Handles.color = Color.white;
 
-            if (index > 0)
+            for(int i = 0; i < _target.shape.pointCount; i++)
             {
-                Vector2 previousPoint = new Vector2(_target.crossSection.points[index - 1].x, -_target.crossSection.points[index - 1].y);
-                Handles.DrawLine(pointPos, previousPoint * _pixelsPerUnit + _center);
+                if (i > 0)
+                {
+                    Handles.DrawLine( PointSpaceToWindowSpace(_target.shape.GetPointPosition(i)),
+                        PointSpaceToWindowSpace(_target.shape.GetPointPosition(i - 1)));
+                }
             }
-            else if (index == 0 && _target.crossSection.closeShape && _target.crossSection.pointCount > 2)
-            {
-                Handles.color = Color.gray;
-                Vector2 lastPoint = 
-                    new Vector2(_target.crossSection.points[_target.crossSection.pointCount - 1].x
-                    , -_target.crossSection.points[_target.crossSection.pointCount - 1].y);
-                Handles.DrawLine(pointPos, lastPoint * _pixelsPerUnit + _center);
-            }
-
-            
 
             Handles.EndGUI();
         }
+
 
         /// <summary>
         /// Displays the current edited point settings
@@ -188,11 +216,25 @@ namespace PathTracer.CrossSectionUtility
         /// <param name="id"></param>
         private void DisplayPointSettingsWindow(int id)
         {
-            _target.crossSection.points[_selectedId] = 
-                EditorGUILayout.Vector2Field("Point " + _selectedId, _target.crossSection.points[_selectedId]);
+            _target.shape.SetPointPosition(selectedId,
+                EditorGUILayout.Vector2Field("Point " + selectedId, _target.shape.GetPointPosition(selectedId)));
+        }
+
+        private Vector2 PointSpaceToWindowSpace(Vector2 position)
+        {
+            position.y *= -1; //Invert the y axis
+            return position * _pixelsPerUnit + _center;
+        }
+
+        private Vector2 WindowSpaceToPointSpace(Vector2 position)
+        {
+            position = (position - _center) / _pixelsPerUnit;
+            position.y *= -1;
+            return position;
         }
 
         #endregion
+
         #region ToolPannel
 
         /// <summary>
@@ -200,6 +242,7 @@ namespace PathTracer.CrossSectionUtility
         /// </summary>
         private void DrawToolPannel()
         {
+            Event e = Event.current;
 
             GUILayout.Space(10);
 
@@ -212,24 +255,47 @@ namespace PathTracer.CrossSectionUtility
             }
 
             GUILayout.Space(10);
-            if (GUILayout.Button("Remove Point", GUILayout.Width(95), GUILayout.Height(TOP_BUTTON_HEIGHT)))
-            {
-                RemovePoint();
-            }
 
-            GUILayout.Space(10);
-
-            _target.crossSection.closeShape =
-                GUILayout.Toggle(_target.crossSection.closeShape, "Close Shape", "Button",
+            _target.shape.closeShape =
+                GUILayout.Toggle(_target.shape.closeShape, "Close Shape", "Button",
                 GUILayout.Width(85), GUILayout.Height(TOP_BUTTON_HEIGHT));
+
+            //if(GUILayout.Button())
+
+            GUILayout.Space(20);
+
+            if(selectedId >= 0 && _target.shape.pointCount > 2)
+            {
+                bool delete = false;
+
+                if(e.keyCode == KeyCode.Delete && e.type == EventType.KeyDown)
+                {
+                    e.Use();
+                    delete = true;         
+                }
+
+                if (GUILayout.Button("Remove Point", GUILayout.Width(95), GUILayout.Height(TOP_BUTTON_HEIGHT)))
+                {
+                    delete = true;
+                }
+
+                if (delete)
+                {
+                    Undo.RecordObject(_target, "Delete Point");
+                    EditorUtility.SetDirty(_target);
+                    RemovePoint();
+                }
+
+            }
 
             EditorGUILayout.EndHorizontal();
         }
 
         #endregion
+
         #region Tools
         /// <summary>
-        /// Adds a point to the cross section
+        /// Adds a point to the shape
         /// </summary>
         private void AddPoint()
         {
@@ -238,11 +304,18 @@ namespace PathTracer.CrossSectionUtility
 
         private void RemovePoint()
         {
-            Debug.Log("Remove Point");
+            if (_target.shape.pointCount <= 2) return;
+
+            int removeIndex = selectedId;
+
+            Debug.Log("Delete Point : " + removeIndex);
+
+            _target.shape.RemovePoint(removeIndex);
         }
 
 
         #endregion
+
         #region Grid
 
         private void DrawGrid(float spacing, float opacity, bool displayUnits)

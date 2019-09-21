@@ -10,10 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b42af5a6a35b009428858e90c34cad45, type: 3}
-  m_Name: PlaneSection
+  m_Name: BaseShape
   m_EditorClassIdentifier: 
-  _crossSection:
+  shape:
     _points:
-    - {x: -1, y: 0}
-    - {x: 0.995, y: 0.01}
-    _closeShape: 0
+    - {x: -0.48979592, y: -0.35306123}
+    - {x: -0.26938775, y: 0.38163266}
+    - {x: -0.024539877, y: 0.16564417}
+    - {x: 0.82985073, y: 0.104477614}
+    - {x: -0.48979592, y: -0.35306123}
+    _closeShape: 1

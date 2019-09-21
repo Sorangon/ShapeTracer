@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace PathTracer.CrossSectionUtility
+namespace PathTracer.Shapes
 {
-    [CreateAssetMenu(fileName = "NewCrossSection",menuName = "Path Tracer/Cross Section", order = 100)]
-    public class CrossSectionAsset : ScriptableObject
+    [CreateAssetMenu(fileName = "NewShape",menuName = "Path Tracer/Shape", order = 100)]
+    public class ShapeAsset : ScriptableObject
     {
         #region Attributes
 
-        [SerializeField] public CrossSection crossSection = CrossSection.defaultSection;
+        [SerializeField] public Shape shape = Shape.defaultShape;
 
 
         #region Accessors
@@ -23,10 +23,7 @@ namespace PathTracer.CrossSectionUtility
         #endregion
         #endregion
 
-        #region Constructors
-        #endregion
-
-        #region Methods
+        #region Points
         #endregion
     }
 }
