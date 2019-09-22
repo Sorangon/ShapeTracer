@@ -13,6 +13,7 @@ namespace ShapeTracer.Path
         private static PathTangentType _selectedTangent =  (PathTangentType)(-1);
         private static ShapeTracerPath _currentPath = null;
         private static bool _displayNormal = false;
+        private static float _lastDeltaRotation = 0.0f;
 
         #region Accessors
         /// <summary> Current edited point id </summary>
@@ -32,6 +33,7 @@ namespace ShapeTracer.Path
         {
             _selectedId = -1;
             _currentPath = path;
+            _lastDeltaRotation = 0.0f;
         }
 
         public static void Disable()
@@ -71,7 +73,7 @@ namespace ShapeTracer.Path
             EditorGUILayout.BeginHorizontal();
 
             EditorGUI.BeginChangeCheck();
-            float newNormalAngle = EditorGUILayout.Slider("Normal Angle", _currentPath.pathData[index].normalAngle, -180, 180);
+            float newNormalAngle = EditorGUILayout.FloatField("Roll", _currentPath.pathData[index].normalAngle);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -161,15 +163,18 @@ namespace ShapeTracer.Path
             PathPoint point = _currentPath.pathData[selectedId];
             Handles.color = Color.yellow;
 
-            //Draw tangents handles
-            for(int i = 0; i < 2; i++)
+            if(Tools.current != Tool.Rotate)
             {
-                Vector3 tangentPos = _currentPath.transform.position + point.GetObjectSpaceTangent((PathTangentType)i);
-                Handles.DrawAAPolyLine(6,tangentPos, handlePos);
-
-                if (Handles.Button(tangentPos, Quaternion.identity, 0.03f * cameraDistance, 0.04f * cameraDistance, Handles.SphereHandleCap))
+                //Draw tangents handles
+                for (int i = 0; i < 2; i++)
                 {
-                    _selectedTangent = (PathTangentType)i;
+                    Vector3 tangentPos = _currentPath.transform.position + point.GetObjectSpaceTangent((PathTangentType)i);
+                    Handles.DrawAAPolyLine(6, tangentPos, handlePos);
+
+                    if (Handles.Button(tangentPos, Quaternion.identity, 0.03f * cameraDistance, 0.04f * cameraDistance, Handles.SphereHandleCap))
+                    {
+                        _selectedTangent = (PathTangentType)i;
+                    }
                 }
             }
 
@@ -218,7 +223,7 @@ namespace ShapeTracer.Path
         }
 
 
-        private static PathPoint SetPointRotation(PathPoint point)
+        private static void SetPointRotation(PathPoint point)
         {
             EditorGUI.BeginChangeCheck();
             Vector3 tangentDir = point.GetPointSpaceTangent(PathTangentType.Out);
@@ -228,19 +233,36 @@ namespace ShapeTracer.Path
 
             Vector3 pointWorldPos = point.position + _currentPath.transform.position;
 
-
-            Quaternion newRot = Handles.DoRotationHandle(pivotRotation * roll, pointWorldPos);
+            Quaternion newRot = Handles.Disc(pivotRotation * roll, pointWorldPos,tangentDir,
+                HandleUtility.GetHandleSize(pointWorldPos), false, 0.0f);
 
             if (EditorGUI.EndChangeCheck())
             {
-                point.normalAngle = -newRot.eulerAngles.z;
-                //point.SetPointSpaceTangent(PathTangentType.Out
-                    //, newRot * point.GetPointSpaceTangent(PathTangentType.Out), true);
                 Undo.RecordObject(_currentPath, "Rotate Point");
                 EditorUtility.SetDirty(_currentPath);
-            }
 
-            return point;
+                float deltaRot = -((point.normalAngle % 360) + newRot.eulerAngles.z);
+
+                /*if (_lastDeltaRotation * (deltaRot) < 0.0f && Mathf.Abs(deltaRot) > 180.0f)
+                {
+                    Debug.Log(deltaRot);
+                    if(deltaRot > 0)
+                    {
+                        deltaRot -= 360.0f;
+                    }
+                    else
+                    {
+                        deltaRot += 360.0f;
+                    }
+
+                    Debug.Log("Loop");
+                }*/
+
+                //Debug.Log("Delta Rotation : " + (-(point.normalAngle + newRot.eulerAngles.z)));
+                //float 
+                point.normalAngle += deltaRot;
+                _lastDeltaRotation = deltaRot;
+            }
         }
 
         #endregion

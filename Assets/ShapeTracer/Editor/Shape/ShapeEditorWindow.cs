@@ -48,6 +48,8 @@ namespace ShapeTracer.Shapes
         private bool _initializedTool = false;
         private bool _showSelected = true;
 
+        private bool _selectionFlag = true;
+
         private static bool _isActive = false;
 
         private static float _pixelsPerUnit = 200.0f;
@@ -151,6 +153,11 @@ namespace ShapeTracer.Shapes
 
         private void OnGUI()
         {
+            if(Event.current.button == 0 && Event.current.type == EventType.MouseUp && IsIntoWorkSpace(Event.current.mousePosition))
+            {
+                _selectionFlag = false;
+            }
+
             Rect windowRect = new Rect(0, 0, position.width, position.height);
             GUI.DrawTexture(windowRect, _backgroundTexture, ScaleMode.StretchToFill);
 
@@ -166,10 +173,8 @@ namespace ShapeTracer.Shapes
             ProcessTool();
 
             int pointsToDisplay = _target.shape.pointCount - (_target.shape.closeShape ? 1 : 0);
-            for (int i = 0; i < pointsToDisplay; i++)
-            {
-                DisplayPoints(i);
-            }
+
+            DisplayPoints();
 
             DisplayEdges();
 
@@ -203,6 +208,12 @@ namespace ShapeTracer.Shapes
             CheckShortuts();
 
             _showSelected = true;
+
+            if (_selectionFlag == false && _selectedId >= 0)
+            {
+                _selectedId = -1;
+                Repaint();
+            }
         }
 
 
@@ -286,34 +297,56 @@ namespace ShapeTracer.Shapes
 
         #region Display
 
-        private void DisplayPoints(int index)
+        private void DisplayPoints()
         {
+            Event e = Event.current;
+
             Handles.BeginGUI();
 
-            Vector2 pointPos = PointSpaceToWindowSpace(_target.shape.GetPointPosition(index));
+            for (int i = 0; i < _target.shape.pointCount; i++)
+            {
+                Vector2 pointPos = PointSpaceToWindowSpace(_target.shape.GetPointPosition(i));
 
-            if(!_showSelected)
-            {
-                Handles.color = Color.white;
-                Handles.DotHandleCap(0, pointPos, Quaternion.identity, 2.0f, EventType.Repaint);
-            }
-            else
-            {
-                if (index == selectedId)
+                if (!_showSelected)
                 {
-                    Handles.color = Color.green;
-                    Handles.DotHandleCap(0, pointPos, Quaternion.identity, 8.0f, EventType.Repaint);
+                    Handles.color = Color.white;
+                    Handles.DotHandleCap(0, pointPos, Quaternion.identity, 2.0f, EventType.Repaint);
                 }
                 else
                 {
                     Handles.color = Color.white;
-                    if (Handles.Button(pointPos, Quaternion.identity, 4f, 6f, Handles.DotHandleCap))
+                    if (i == selectedId)
                     {
-                        selectedId = index;
-                        Repaint();
+                        Handles.color = Color.green;
+                        if (Handles.Button(pointPos, Quaternion.identity, 6f, 8f, Handles.DotHandleCap))
+                        {
+                            _selectionFlag = true;
+                            selectedId = i;
+                            Repaint();
+                        }
+                    }
+                    else
+                    {
+                        if (Handles.Button(pointPos, Quaternion.identity, 4f , 6f , Handles.DotHandleCap))
+                        {
+                            _selectionFlag = true;
+                            selectedId = i;
+                            Repaint();
+                        }
                     }
                 }
             }
+
+            
+
+            //Desselect if nothong were selected
+            /*if(selectionFlag == false)
+            {
+                Debug.Log("Reset Selection");
+                _selectedId = -1;
+                Repaint();
+            }*/
+
 
             Handles.EndGUI();
         }
@@ -497,7 +530,7 @@ namespace ShapeTracer.Shapes
         }
 
         /// <summary>
-        /// Region Moves the selected point
+        /// Moves the selected point
         /// </summary>
         /// <param name="index"></param>
         /// <param name="pointPos"></param>
@@ -510,19 +543,17 @@ namespace ShapeTracer.Shapes
             EndWindows();
 
             Handles.color = Color.green;
+
             Vector2 pointPos = PointSpaceToWindowSpace( _target.shape.GetPointPosition(_selectedId));
 
-            EditorGUI.BeginChangeCheck();
-            Handles.Slider2D(pointPos, Vector3.forward,
-                Vector2.up, Vector2.right, 8.0f, Handles.DotHandleCap, Vector2.one * 100.0f); //Point drag handle
-
-            Event e = Event.current;
-
-            if (EditorGUI.EndChangeCheck())
+            if(Event.current.button == 0 && Event.current.type == EventType.MouseDrag)
             {
                 Undo.RecordObject(_target, "Move Shape Point");
                 EditorUtility.SetDirty(_target);
 
+                _selectionFlag = true;
+
+                Event e = Event.current;
                 Vector2 newPos = e.mousePosition;
 
                 //Snap on ctrl old
@@ -533,7 +564,19 @@ namespace ShapeTracer.Shapes
 
                 newPos = WindowSpaceToPointSpace(newPos);
                 _target.shape.SetPointPosition(_selectedId, newPos);
+
+                Repaint();
             }
+
+            /*EditorGUI.BeginChangeCheck();
+            Handles.Slider2D(pointPos, Vector3.forward,
+                Vector2.up, Vector2.right, 8.0f, Handles.DotHandleCap, Vector2.one * 100.0f); //Point drag handle
+
+
+            if (EditorGUI.EndChangeCheck())
+            {
+               
+            }*/
         }
 
         #endregion
