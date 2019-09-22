@@ -45,6 +45,7 @@ namespace ShapeTracer.Shapes
         private Dictionary<string,Tool> _toolbox= new Dictionary<string, Tool>();
         private Tool _currentTool = null;
         private Tool _defaultTool = null;
+        private bool _initializedTool = false;
         private bool _showSelected = true;
 
         private static bool _isActive = false;
@@ -199,6 +200,7 @@ namespace ShapeTracer.Shapes
                 UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
 
             DrawArea(shapeUtilityPannelRect, false, DrawShapeUtilityPannel);
+            CheckShortuts();
 
             _showSelected = true;
         }
@@ -239,6 +241,19 @@ namespace ShapeTracer.Shapes
 
 
             GUILayout.EndArea();
+        }
+
+        #endregion
+
+        #region Shortcuts
+        private void CheckShortuts()
+        {
+            Event e = Event.current;
+
+            if(e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
+            {
+                _currentTool = _defaultTool;
+            }
         }
 
         #endregion
@@ -316,10 +331,16 @@ namespace ShapeTracer.Shapes
             {
                 if (i > 0)
                 {
+                    if(_target.shape.closeShape && i == _target.shape.pointCount - 1 && _target.shape.pointCount > 1)
+                    {
+                        Handles.color = Color.grey;
+                    }
+
                     Handles.DrawLine( PointSpaceToWindowSpace(_target.shape.GetPointPosition(i)),
                         PointSpaceToWindowSpace(_target.shape.GetPointPosition(i - 1)));
                 }
             }
+            Handles.color = Color.white;
 
             Handles.EndGUI();
         }
@@ -394,6 +415,8 @@ namespace ShapeTracer.Shapes
                 {
                     _currentTool = _defaultTool; //Toggle off
                 }
+
+                _initializedTool = false;
             }
 
             GUI.backgroundColor = lastColor;
@@ -423,7 +446,54 @@ namespace ShapeTracer.Shapes
         private void DrawPoints()
         {
             _showSelected = false;
-            Debug.Log("Add Point");
+
+            if(_initializedTool == false)
+            {
+                _selectedId = -1; //Reset Selection
+            }
+
+
+            Handles.BeginGUI();
+            Handles.color = Color.yellow;
+
+            Vector2 mousePos = Event.current.mousePosition;
+
+            //Snap
+            if (Event.current.control == true)
+            {
+                mousePos = SnapToGrid(RemapToFirstPowerOfTen(_pixelsPerUnit), mousePos);
+            }
+
+            if (_target.shape.closeShape == true && _target.shape.pointCount > 1)
+            {
+                Vector2 lastPoint = PointSpaceToWindowSpace(_target.shape.GetPointPosition(_target.shape.pointCount - 2));
+                Vector2 firstPoint = PointSpaceToWindowSpace(_target.shape.GetPointPosition(0));
+
+                Handles.DrawLine(lastPoint, mousePos);
+                Handles.DrawLine(firstPoint, mousePos);
+            }
+            else if(_target.shape.closeShape == false && _target.shape.pointCount > 0)
+            {
+                Vector2 fromPoint = PointSpaceToWindowSpace(_target.shape.GetPointPosition(_target.shape.pointCount - 1));
+                Handles.DrawLine(fromPoint, mousePos);
+            }
+
+            Handles.DotHandleCap(0, mousePos, Quaternion.identity, 5.0f, EventType.Repaint);
+
+            if(Event.current.button == 0 && Event.current.type == EventType.MouseDown && IsIntoWorkSpace(mousePos))
+            {
+                Undo.RecordObject(_target, "Add Point");
+                EditorUtility.SetDirty(_target);
+                _target.shape.AddPoint(WindowSpaceToPointSpace(mousePos));
+                Event.current.Use();
+                Repaint();
+            }
+                
+
+            Repaint();
+
+            Handles.color = Color.white;
+            Handles.EndGUI();
         }
 
         /// <summary>
@@ -481,6 +551,11 @@ namespace ShapeTracer.Shapes
                 if(_defaultTool != null)
                     _defaultTool._behavior.Invoke();
             }
+
+            if(_initializedTool == false)
+            {
+                _initializedTool = true;
+            }
         }
 
         #endregion
@@ -520,7 +595,6 @@ namespace ShapeTracer.Shapes
                 {
                     Undo.RecordObject(_target, "Delete Point");
                     EditorUtility.SetDirty(_target);
-                    Debug.Log("Point" + _selectedId.ToString() + "Deleted");
                     _target.shape.RemovePoint(selectedId);
                 }
 
@@ -606,6 +680,9 @@ namespace ShapeTracer.Shapes
         #endregion
 
         #region Utils
+
+
+
         private static float RemapToFirstPowerOfTen(float value)
         {
             while (value > 10.0f || value < 1.0f)
@@ -621,6 +698,16 @@ namespace ShapeTracer.Shapes
             }
 
             return value;
+        }
+
+        private bool IsIntoWorkSpace(Vector2 pos)
+        {
+            Rect workSpace = new Rect(TOOL_BUTTON_SIZE + BOX_AREA_OFFSET,
+                UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET,
+                position.width - TOOL_BUTTON_SIZE + BOX_AREA_OFFSET,
+                position.height - UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
+
+            return workSpace.Contains(pos);
         }
 
         #endregion

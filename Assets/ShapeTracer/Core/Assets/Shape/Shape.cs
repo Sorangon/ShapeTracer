@@ -98,10 +98,32 @@ namespace ShapeTracer.Shapes
             return _points[index];
         }
 
+        /// <summary>
+        /// Adds a point from the last one
+        /// </summary>
+        /// <param name="position"></param>
         public void AddPoint(Vector2 position)
         {
-            Array.Resize(ref _points, _points.Length + 1);
-            _points[pointCount - 1] = position;
+            AddPoint(pointCount - 1, position);
+        }
+
+        /// <summary>
+        /// Adds a point from an index
+        /// </summary>
+        /// <param name="fromIndex"></param>
+        /// <param name="position"></param>
+        public void AddPoint(int fromIndex, Vector2 position)
+        {
+            List<Vector2> pointList = _points.ToList();
+
+            if (!_closeShape)
+            {
+                fromIndex++;
+            }
+
+            pointList.Insert(fromIndex, position);
+
+            _points = pointList.ToArray();
         }
 
         public void RemovePoint(int index)
