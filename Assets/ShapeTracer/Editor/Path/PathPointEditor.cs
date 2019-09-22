@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace ShapeTracer
+namespace ShapeTracer.Path
 {
     public static class PathPointEditor
     {
@@ -11,7 +11,7 @@ namespace ShapeTracer
 
         private static int _selectedId = -1;
         private static PathTangentType _selectedTangent =  (PathTangentType)(-1);
-        private static PathMeshGenerator _currentPath = null;
+        private static ShapeTracerPath _currentPath = null;
         private static bool _displayNormal = false;
 
         #region Accessors
@@ -28,7 +28,7 @@ namespace ShapeTracer
         /// Initialize the editor
         /// </summary>
         /// <param name="path"></param>
-        public static void Init(PathMeshGenerator path)
+        public static void Init(ShapeTracerPath path)
         {
             _selectedId = -1;
             _currentPath = path;

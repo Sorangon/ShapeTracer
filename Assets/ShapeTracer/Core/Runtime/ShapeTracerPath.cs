@@ -4,10 +4,10 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using ShapeTracer.Shapes;
 
-namespace ShapeTracer
+namespace ShapeTracer.Path
 {
     [RequireComponent(typeof(MeshRenderer)), RequireComponent(typeof(MeshFilter))]
-    public class PathMeshGenerator : MonoBehaviour
+    public class ShapeTracerPath : MonoBehaviour
     {
         #region Attributes
 
@@ -121,7 +121,7 @@ namespace ShapeTracer
 
             if(sectionVertexCount < 2)
             {
-                Debug.LogWarning("Path cannot being generated, minimum 2 points are required");
+                //Debug.LogWarning("Path cannot being generated, minimum 2 points are required");
                 return new Mesh();
             }
 
@@ -200,7 +200,7 @@ namespace ShapeTracer
             }
 
             Mesh finalMesh = new Mesh();
-            finalMesh.name = "Generated_Road_" + gameObject.GetInstanceID();
+            finalMesh.name = "Generated_Path_" + gameObject.GetInstanceID();
 
             finalMesh.vertices = vertices;
             finalMesh.uv = uvs;

@@ -94,6 +94,7 @@ namespace ShapeTracer.Shapes
 
         public Vector2 GetPointPosition(int index)
         {
+            index = Mathf.Clamp(index, 0, pointCount);
             return _points[index];
         }
 

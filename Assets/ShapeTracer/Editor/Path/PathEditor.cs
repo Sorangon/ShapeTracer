@@ -4,14 +4,14 @@ using UnityEngine;
 using UnityEditor;
 using ShapeTracer.Shapes;
 
-namespace ShapeTracer
+namespace ShapeTracer.Path
 {
-    [CustomEditor(typeof(PathMeshGenerator))]
+    [CustomEditor(typeof(ShapeTracerPath))]
     public class PathEditor : Editor
     {
         #region Attributes
 
-        private PathMeshGenerator _currentPath = null;
+        private ShapeTracerPath _currentPath = null;
         private bool _autoGenerateRoad = true;
 
         #endregion
@@ -25,7 +25,7 @@ namespace ShapeTracer
 
         private void OnEnable()
         {
-            _currentPath = (PathMeshGenerator)target;
+            _currentPath = (ShapeTracerPath)target;
 
             PathPointEditor.Init(_currentPath);
         }
