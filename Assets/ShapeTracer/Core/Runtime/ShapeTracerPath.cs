@@ -14,8 +14,8 @@ namespace ShapeTracer.Path
         [SerializeField] private ShapeAsset _crossSectionAsset = null;
         [SerializeField] private PathData _pathData = new PathData();
         [SerializeField, Range(0.5f, 2.0f)] private float _widthMultiplier = 1.0f;
-        [SerializeField, Range(0.2f, 10.0f)] private float _uvResolution = 1.0f;
-        [SerializeField] private int _subdivisions = 5;
+        [SerializeField, Range(0.2f, 10.0f)] private float _uvResolution = 4.0f;
+        [SerializeField] private int _subdivisions = 10;
         [SerializeField] private bool _loopTrack = false;
 
         private MeshRenderer _targetRenderer = null;
@@ -84,16 +84,17 @@ namespace ShapeTracer.Path
 
         #region Methods
 
-        #region Lifecycle
+        #region Unity Callbacks
 
         private void Awake()
         {
             UpdatePath();
         }
 
+
         #endregion
 
-        #region Public
+        #region Update
 
         public void UpdatePath()
         {
@@ -102,7 +103,7 @@ namespace ShapeTracer.Path
 
         #endregion
 
-        #region Private
+        #region Generation
 
         private Mesh GeneratePathMesh(PathData path)
         {

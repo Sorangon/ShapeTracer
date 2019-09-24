@@ -35,8 +35,8 @@ namespace ShapeTracer
         {
             _path = new List<PathPoint>()
             {
-                new PathPoint(Vector3.back * 2, Vector3.up),
-                new PathPoint(Vector3.forward * 2, Vector3.up)
+                new PathPoint(Vector3.back * 4, Vector3.up),
+                new PathPoint(Vector3.forward * 4, Vector3.up)
             };
         }
 
@@ -51,7 +51,7 @@ namespace ShapeTracer
         /// <param name="offset">World game object position</param>
         public void AddPoint(Vector3 offset)
         {
-            Vector3 newPointPos = _path[Length - 1].GetObjectSpaceTangent(PathTangentType.Out);
+            Vector3 newPointPos = _path[Length - 1].GetObjectSpaceTangent(PathTangentType.Out) * 2;
 
             Vector3 newInTangent = _path[Length - 1].GetPointSpaceTangent(PathTangentType.In);
             Vector3 newOutTangent = _path[Length - 1].GetPointSpaceTangent(PathTangentType.Out);

@@ -130,9 +130,6 @@ namespace ShapeTracer.Path
         {
             Vector3 handlePosition = _currentPath.transform.position + _currentPath.pathData[index].position;
 
-            //Calculate the camera distance to have a constant handle size on screen
-            float cameraDistance = (view.camera.transform.position - handlePosition).magnitude;
-
             if (_displayNormal)
             {
                 Handles.DrawLine(handlePosition, handlePosition + _currentPath.pathData[index].normal * 2.0f);
@@ -143,7 +140,10 @@ namespace ShapeTracer.Path
                 Handles.color = Color.green;
             }
 
-            if (Handles.Button(handlePosition, Quaternion.identity, 0.04f * cameraDistance, 0.05f * cameraDistance, Handles.SphereHandleCap))
+            float handleSize = HandleUtility.GetHandleSize(handlePosition);
+
+
+            if (Handles.Button(handlePosition, Quaternion.identity, 0.3f * handleSize, 0.4f * handleSize, Handles.SphereHandleCap))
             {
                 SelectPoint(index);
                 if(Tools.hidden == false)
@@ -154,11 +154,11 @@ namespace ShapeTracer.Path
 
             if (_selectedId == index)
             {
-                DrawSelectedPointHandles(index, handlePosition, cameraDistance);
+                DrawSelectedPointHandles(index, handlePosition, handleSize);
             }
         }
 
-        private static void DrawSelectedPointHandles(int selectedId, Vector3 handlePos, float cameraDistance)
+        private static void DrawSelectedPointHandles(int selectedId, Vector3 handlePos, float handleSize)
         {
             PathPoint point = _currentPath.pathData[selectedId];
             Handles.color = Color.yellow;
@@ -171,7 +171,7 @@ namespace ShapeTracer.Path
                     Vector3 tangentPos = _currentPath.transform.position + point.GetObjectSpaceTangent((PathTangentType)i);
                     Handles.DrawAAPolyLine(6, tangentPos, handlePos);
 
-                    if (Handles.Button(tangentPos, Quaternion.identity, 0.03f * cameraDistance, 0.04f * cameraDistance, Handles.SphereHandleCap))
+                    if (Handles.Button(tangentPos, Quaternion.identity, 0.3f * handleSize, 0.4f * handleSize, Handles.SphereHandleCap))
                     {
                         _selectedTangent = (PathTangentType)i;
                     }
@@ -233,8 +233,12 @@ namespace ShapeTracer.Path
 
             Vector3 pointWorldPos = point.position + _currentPath.transform.position;
 
-            Quaternion newRot = Handles.Disc(pivotRotation * roll, pointWorldPos,tangentDir,
-                HandleUtility.GetHandleSize(pointWorldPos), false, 0.0f);
+            float handleSize = HandleUtility.GetHandleSize(pointWorldPos);
+
+            Quaternion newRot = Handles.Disc(pivotRotation * roll, pointWorldPos,tangentDir, handleSize, false, 0.0f);
+
+            Handles.color *= new Color(1f, 0f, 0f, 1f);
+            Handles.DrawLine(pointWorldPos + newRot * Vector3.left * handleSize, pointWorldPos + newRot * Vector3.right * handleSize);
 
             if (EditorGUI.EndChangeCheck())
             {

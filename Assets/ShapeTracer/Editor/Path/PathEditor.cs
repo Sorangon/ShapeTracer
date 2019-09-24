@@ -35,13 +35,27 @@ namespace ShapeTracer.Path
             GUILayout.Space(5.0f);
 
             EditorGUILayout.BeginHorizontal();
-            ShapeAsset crossSection = (ShapeAsset)EditorGUILayout.ObjectField(
+            ShapeAsset shapeAsset = (ShapeAsset)EditorGUILayout.ObjectField(
             "Shape", _currentPath.shapeAsset, typeof(ShapeAsset), false);
-            _currentPath.shapeAsset = crossSection;
+            _currentPath.shapeAsset = shapeAsset;
 
-            if (GUILayout.Button("Edit", GUILayout.Width(60)) && crossSection != null)
+            if(shapeAsset != null)
             {
-                ShapeEditorWindow.Edit(crossSection);
+                if (GUILayout.Button("Edit", GUILayout.Width(60)))
+                {
+                    ShapeEditorWindow.Edit(shapeAsset);
+                }
+            }
+            else
+            {
+                if (GUILayout.Button("Create", GUILayout.Width(60)))
+                {
+                    ShapeAsset newShapeAsset = CreateShapeAsset();
+                    if(newShapeAsset != null)
+                    {
+                        _currentPath.shapeAsset = newShapeAsset;
+                    }
+                }
             }
 
             EditorGUILayout.EndHorizontal();
@@ -111,29 +125,7 @@ namespace ShapeTracer.Path
 
             //Draws bezier curve
 
-            int curves = _currentPath.pathData.Length - (_currentPath.loopTrack ? 0 : 1);
-            for (int i = 0; i < curves; i++)
-            {
-                Vector3 offset = _currentPath.transform.position;
-                PathPoint p0 = _currentPath.pathData[i];
-                PathPoint p1;
-
-                if (i < _currentPath.pathData.Length - 1)
-                {
-                   p1 = _currentPath.pathData[i + 1];
-                }
-                else
-                {
-                   p1 = _currentPath.pathData[0];
-                }
-
-
-                Handles.DrawBezier(
-                    p0.position + offset, 
-                    p1.position + offset, 
-                    p0.GetObjectSpaceTangent(PathTangentType.Out) + offset, 
-                    p1.GetObjectSpaceTangent(PathTangentType.In) + offset, Color.green, null, 5f);
-            }
+            DrawBezierCurve();
         }
 
         private void OnDisable()
@@ -145,7 +137,68 @@ namespace ShapeTracer.Path
 
         #endregion
 
-        #region Private
+        #region Bezier Curve
+
+        private void DrawBezierCurve()
+        {
+            int curves = _currentPath.pathData.Length - (_currentPath.loopTrack ? 0 : 1);
+            for (int i = 0; i < curves; i++)
+            {
+                Vector3 offset = _currentPath.transform.position;
+                PathPoint p0 = _currentPath.pathData[i];
+                PathPoint p1;
+
+                if (i < _currentPath.pathData.Length - 1)
+                {
+                    p1 = _currentPath.pathData[i + 1];
+                }
+                else
+                {
+                    p1 = _currentPath.pathData[0];
+                }
+
+
+                Handles.DrawBezier(
+                    p0.position + offset,
+                    p1.position + offset,
+                    p0.GetObjectSpaceTangent(PathTangentType.Out) + offset,
+                    p1.GetObjectSpaceTangent(PathTangentType.In) + offset, Color.green, null, 5f);
+            }
+        }
+
+        #endregion
+
+        #region Asset Utility
+
+        private ShapeAsset CreateShapeAsset()
+        {
+            string extension = ".asset";
+            string path = EditorUtility.SaveFilePanel("Create New Shape Asset", Application.dataPath, "New Shape" + extension, "asset");
+
+            if(path.Length == 0)
+            {
+                return null;
+            }
+
+
+            int filePos = path.LastIndexOf(extension);
+            int namePos = path.LastIndexOf('/') + 1;
+            string name = path.Substring(namePos,filePos - namePos);
+
+            path = path.Substring(path.LastIndexOf("Assets"));
+
+            Debug.Log(path);
+
+            ShapeAsset newShape = ShapeAsset.CreateInstance(typeof(ShapeAsset)) as ShapeAsset;
+            newShape.name = name;
+            AssetDatabase.CreateAsset(newShape, path);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            EditorUtility.FocusProjectWindow();
+            Selection.activeObject = newShape;
+
+            return newShape;
+        }
 
         #endregion
 

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEditor;
+using ShapeTracer.Shapes.Tools;
 
 namespace ShapeTracer.Shapes
 {
@@ -37,30 +39,32 @@ namespace ShapeTracer.Shapes
 
         #region Attributes
 
-        private static ShapeAsset _target = null;
+        public ShapeAsset asset = null;
 
         /// <summary>
         /// The toolbox containing all the tools functions, bind tools in the RegisterTool() functions
         /// </summary>
         private Dictionary<string,Tool> _toolbox= new Dictionary<string, Tool>();
+        //private Dictionary<string, ShapeEditorTool> _tools = new Dictionary<string, ShapeEditorTool>();
         private Tool _currentTool = null;
         private Tool _defaultTool = null;
         private bool _initializedTool = false;
-        private bool _showSelected = true;
+        public bool showSelected = true;
 
-        private bool _selectionFlag = true;
+        public bool selectionFlag = true;
 
         private static bool _isActive = false;
 
-        private static float _pixelsPerUnit = 200.0f;
-        private static Vector2 _center = Vector2.zero;
+        private float pixelsPerUnits = 200.0f;
 
-        private static int _selectedId = -1;
-        private static int selectedId
+        private Vector2 spaceCenter = Vector2.zero;
+
+        private int _selectedId = -1;
+        public int selectedId
         {
             get
             {
-                if(_selectedId > _target.shape.pointCount - 1)
+                if(_selectedId > asset.shape.pointCount - 1)
                 {
                     return -1; //reset
                 }
@@ -123,21 +127,31 @@ namespace ShapeTracer.Shapes
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
             Reset();
             InitToolbox();
+            //FindTools();
         }
 
         public static void Edit(ShapeAsset asset)
         {
             ShapeEditorWindow current = GetWindow<ShapeEditorWindow>("Shape Editor");
-            _target = asset;
+            current.asset = asset;
             current.Show();
             current.Reset();
         }
 
+        /*private void FindTools()
+        {
+            Type[] tools = Assembly.GetAssembly(typeof(ShapeEditorTool)).GetTypes();
+            for(int i = 0; i < tools.Length; i++)
+            {
+                Debug.Log(tools[i].GetType().FullName);
+            }
+        }*/
+
         private void Reset()
         {
-            _center = new Vector2(position.width / 2, position.height / 2);
+            spaceCenter = new Vector2(position.width / 2, position.height / 2);
             selectedId = -1;
-            _pixelsPerUnit = 200.0f;
+            pixelsPerUnits = 200.0f;
         }
        
         private void OnDisable()
@@ -155,24 +169,24 @@ namespace ShapeTracer.Shapes
         {
             if(Event.current.button == 0 && Event.current.type == EventType.MouseUp && IsIntoWorkSpace(Event.current.mousePosition))
             {
-                _selectionFlag = false;
+                selectionFlag = false;
             }
 
             Rect windowRect = new Rect(0, 0, position.width, position.height);
             GUI.DrawTexture(windowRect, _backgroundTexture, ScaleMode.StretchToFill);
 
-            float gridResolution = RemapToFirstPowerOfTen(_pixelsPerUnit);
+            float gridResolution = RemapToFirstPowerOfTen(pixelsPerUnits);
 
             DrawGrid(gridResolution, 0.1f, false);
             DrawGrid(gridResolution * 10.0f, 0.2f, true);
             WindowNavigation();
 
-            if (_target == null) return;
+            if (asset == null) return;
 
 
             ProcessTool();
 
-            int pointsToDisplay = _target.shape.pointCount - (_target.shape.closeShape ? 1 : 0);
+            int pointsToDisplay = asset.shape.pointCount - (asset.shape.closeShape ? 1 : 0);
 
             DisplayPoints();
 
@@ -207,9 +221,9 @@ namespace ShapeTracer.Shapes
             DrawArea(shapeUtilityPannelRect, false, DrawShapeUtilityPannel);
             CheckShortuts();
 
-            _showSelected = true;
+            showSelected = true;
 
-            if (_selectionFlag == false && _selectedId >= 0)
+            if (selectionFlag == false && _selectedId >= 0)
             {
                 _selectedId = -1;
                 Repaint();
@@ -278,14 +292,14 @@ namespace ShapeTracer.Shapes
 
             if (e.isScrollWheel) //Zoom
             {
-                float zoom = _pixelsPerUnit * Event.current.delta.y;
-                _pixelsPerUnit = _pixelsPerUnit - zoom * ZOOM_SENSIBILITY;
+                float zoom = pixelsPerUnits * Event.current.delta.y;
+                pixelsPerUnits = pixelsPerUnits - zoom * ZOOM_SENSIBILITY;
                 Repaint();
                 e.Use();
             }
             else if (e.button == 2 && e.type == EventType.MouseDrag) //Pan view
             {
-                _center += e.delta;
+                spaceCenter += e.delta;
                 Repaint();
                 e.Use();
             }
@@ -303,11 +317,11 @@ namespace ShapeTracer.Shapes
 
             Handles.BeginGUI();
 
-            for (int i = 0; i < _target.shape.pointCount; i++)
+            for (int i = 0; i < asset.shape.pointCount; i++)
             {
-                Vector2 pointPos = PointSpaceToWindowSpace(_target.shape.GetPointPosition(i));
+                Vector2 pointPos = PointSpaceToWindowSpace(asset.shape.GetPointPosition(i));
 
-                if (!_showSelected)
+                if (!showSelected)
                 {
                     Handles.color = Color.white;
                     Handles.DotHandleCap(0, pointPos, Quaternion.identity, 2.0f, EventType.Repaint);
@@ -320,7 +334,7 @@ namespace ShapeTracer.Shapes
                         Handles.color = Color.green;
                         if (Handles.Button(pointPos, Quaternion.identity, 6f, 8f, Handles.DotHandleCap))
                         {
-                            _selectionFlag = true;
+                            selectionFlag = true;
                             selectedId = i;
                             Repaint();
                         }
@@ -329,23 +343,13 @@ namespace ShapeTracer.Shapes
                     {
                         if (Handles.Button(pointPos, Quaternion.identity, 4f , 6f , Handles.DotHandleCap))
                         {
-                            _selectionFlag = true;
+                            selectionFlag = true;
                             selectedId = i;
                             Repaint();
                         }
                     }
                 }
             }
-
-            
-
-            //Desselect if nothong were selected
-            /*if(selectionFlag == false)
-            {
-                Debug.Log("Reset Selection");
-                _selectedId = -1;
-                Repaint();
-            }*/
 
 
             Handles.EndGUI();
@@ -360,17 +364,17 @@ namespace ShapeTracer.Shapes
 
             Handles.color = Color.white;
 
-            for(int i = 0; i < _target.shape.pointCount; i++)
+            for(int i = 0; i < asset.shape.pointCount; i++)
             {
                 if (i > 0)
                 {
-                    if(_target.shape.closeShape && i == _target.shape.pointCount - 1 && _target.shape.pointCount > 1)
+                    if(asset.shape.closeShape && i == asset.shape.pointCount - 1 && asset.shape.pointCount > 1)
                     {
                         Handles.color = Color.grey;
                     }
 
-                    Handles.DrawLine( PointSpaceToWindowSpace(_target.shape.GetPointPosition(i)),
-                        PointSpaceToWindowSpace(_target.shape.GetPointPosition(i - 1)));
+                    Handles.DrawLine( PointSpaceToWindowSpace(asset.shape.GetPointPosition(i)),
+                        PointSpaceToWindowSpace(asset.shape.GetPointPosition(i - 1)));
                 }
             }
             Handles.color = Color.white;
@@ -385,23 +389,23 @@ namespace ShapeTracer.Shapes
         /// <param name="id"></param>
         private void DisplayPointPositionWindow(int id)
         {
-            _target.shape.SetPointPosition(selectedId,
-                EditorGUILayout.Vector2Field("Point " + selectedId, _target.shape.GetPointPosition(selectedId)));
+            asset.shape.SetPointPosition(selectedId,
+                EditorGUILayout.Vector2Field("Point " + selectedId, asset.shape.GetPointPosition(selectedId)));
         }
 
         #endregion
 
         #region Position
 
-        private Vector2 PointSpaceToWindowSpace(Vector2 position)
+        public Vector2 PointSpaceToWindowSpace(Vector2 position)
         {
             position.y *= -1; //Invert the y axis
-            return position * _pixelsPerUnit + _center;
+            return position * pixelsPerUnits + spaceCenter;
         }
 
-        private Vector2 WindowSpaceToPointSpace(Vector2 position)
+        public Vector2 WindowSpaceToPointSpace(Vector2 position)
         {
-            position = (position - _center) / _pixelsPerUnit;
+            position = (position - spaceCenter) / pixelsPerUnits;
             position.y *= -1;
             return position;
         }
@@ -478,7 +482,7 @@ namespace ShapeTracer.Shapes
         /// </summary>
         private void DrawPoints()
         {
-            _showSelected = false;
+            showSelected = false;
 
             if(_initializedTool == false)
             {
@@ -494,20 +498,20 @@ namespace ShapeTracer.Shapes
             //Snap
             if (Event.current.control == true)
             {
-                mousePos = SnapToGrid(RemapToFirstPowerOfTen(_pixelsPerUnit), mousePos);
+                mousePos = SnapToGrid( mousePos);
             }
 
-            if (_target.shape.closeShape == true && _target.shape.pointCount > 1)
+            if (asset.shape.closeShape == true && asset.shape.pointCount > 1)
             {
-                Vector2 lastPoint = PointSpaceToWindowSpace(_target.shape.GetPointPosition(_target.shape.pointCount - 2));
-                Vector2 firstPoint = PointSpaceToWindowSpace(_target.shape.GetPointPosition(0));
+                Vector2 lastPoint = PointSpaceToWindowSpace(asset.shape.GetPointPosition(asset.shape.pointCount - 2));
+                Vector2 firstPoint = PointSpaceToWindowSpace(asset.shape.GetPointPosition(0));
 
                 Handles.DrawLine(lastPoint, mousePos);
                 Handles.DrawLine(firstPoint, mousePos);
             }
-            else if(_target.shape.closeShape == false && _target.shape.pointCount > 0)
+            else if(asset.shape.closeShape == false && asset.shape.pointCount > 0)
             {
-                Vector2 fromPoint = PointSpaceToWindowSpace(_target.shape.GetPointPosition(_target.shape.pointCount - 1));
+                Vector2 fromPoint = PointSpaceToWindowSpace(asset.shape.GetPointPosition(asset.shape.pointCount - 1));
                 Handles.DrawLine(fromPoint, mousePos);
             }
 
@@ -515,9 +519,9 @@ namespace ShapeTracer.Shapes
 
             if(Event.current.button == 0 && Event.current.type == EventType.MouseDown && IsIntoWorkSpace(mousePos))
             {
-                Undo.RecordObject(_target, "Add Point");
-                EditorUtility.SetDirty(_target);
-                _target.shape.AddPoint(WindowSpaceToPointSpace(mousePos));
+                Undo.RecordObject(asset, "Add Point");
+                EditorUtility.SetDirty(asset);
+                asset.shape.AddPoint(WindowSpaceToPointSpace(mousePos));
                 Event.current.Use();
                 Repaint();
             }
@@ -544,14 +548,14 @@ namespace ShapeTracer.Shapes
 
             Handles.color = Color.green;
 
-            Vector2 pointPos = PointSpaceToWindowSpace( _target.shape.GetPointPosition(_selectedId));
+            Vector2 pointPos = PointSpaceToWindowSpace( asset.shape.GetPointPosition(_selectedId));
 
             if(Event.current.button == 0 && Event.current.type == EventType.MouseDrag)
             {
-                Undo.RecordObject(_target, "Move Shape Point");
-                EditorUtility.SetDirty(_target);
+                Undo.RecordObject(asset, "Move Shape Point");
+                EditorUtility.SetDirty(asset);
 
-                _selectionFlag = true;
+                selectionFlag = true;
 
                 Event e = Event.current;
                 Vector2 newPos = e.mousePosition;
@@ -559,24 +563,14 @@ namespace ShapeTracer.Shapes
                 //Snap on ctrl old
                 if (e.control == true)
                 {
-                    newPos = SnapToGrid(RemapToFirstPowerOfTen(_pixelsPerUnit), newPos);
+                    newPos = SnapToGrid( newPos);
                 }
 
                 newPos = WindowSpaceToPointSpace(newPos);
-                _target.shape.SetPointPosition(_selectedId, newPos);
+                asset.shape.SetPointPosition(_selectedId, newPos);
 
                 Repaint();
             }
-
-            /*EditorGUI.BeginChangeCheck();
-            Handles.Slider2D(pointPos, Vector3.forward,
-                Vector2.up, Vector2.right, 8.0f, Handles.DotHandleCap, Vector2.one * 100.0f); //Point drag handle
-
-
-            if (EditorGUI.EndChangeCheck())
-            {
-               
-            }*/
         }
 
         #endregion
@@ -615,7 +609,7 @@ namespace ShapeTracer.Shapes
 
         private void RemovePointUtility(Event e)
         {
-            if (!_showSelected) return;
+            if (!showSelected) return;
 
             GUILayout.Space(BOX_AREA_OFFSET/2);
 
@@ -636,9 +630,9 @@ namespace ShapeTracer.Shapes
 
                 if (delete == true)
                 {
-                    Undo.RecordObject(_target, "Delete Point");
-                    EditorUtility.SetDirty(_target);
-                    _target.shape.RemovePoint(selectedId);
+                    Undo.RecordObject(asset, "Delete Point");
+                    EditorUtility.SetDirty(asset);
+                    asset.shape.RemovePoint(selectedId);
                 }
 
             }
@@ -652,8 +646,8 @@ namespace ShapeTracer.Shapes
         {
             GUILayout.Space(BOX_AREA_OFFSET/2);
 
-            _target.shape.closeShape =
-                GUILayout.Toggle(_target.shape.closeShape, "Close Shape", "Button",
+            asset.shape.closeShape =
+                GUILayout.Toggle(asset.shape.closeShape, "Close Shape", "Button",
                 GUILayout.Width(85), GUILayout.Height(UTILITY_BUTTON_HEIGHT));
         }
 
@@ -675,8 +669,8 @@ namespace ShapeTracer.Shapes
 
             Handles.color = gridColor;
 
-            float xOffset = _center.x % spacing;
-            float yOffset = _center.y % spacing;
+            float xOffset = spaceCenter.x % spacing;
+            float yOffset = spaceCenter.y % spacing;
 
             for(float h = yOffset; h < position.height; h += spacing)
             {
@@ -697,16 +691,16 @@ namespace ShapeTracer.Shapes
         /// <param name="spacing"></param>
         /// <param name="pos"></param>
         /// <returns></returns>
-        private Vector2 SnapToGrid(float spacing, Vector2 pos)
+        public Vector2 SnapToGrid(Vector2 pos)
         {
-            spacing *= BASE_GRID_RESOLUTION;
+            float spacing = RemapToFirstPowerOfTen(pixelsPerUnits) * BASE_GRID_RESOLUTION;
             Vector2 snappedPos = new Vector2();
 
             snappedPos.x = Mathf.Floor(pos.x / spacing) * spacing;
             snappedPos.y = Mathf.Floor(pos.y / spacing) * spacing;
 
-            snappedPos.x += _center.x % spacing;
-            snappedPos.y += _center.y % spacing;
+            snappedPos.x += spaceCenter.x % spacing;
+            snappedPos.y += spaceCenter.y % spacing;
 
             return snappedPos;
         }
@@ -743,7 +737,7 @@ namespace ShapeTracer.Shapes
             return value;
         }
 
-        private bool IsIntoWorkSpace(Vector2 pos)
+        public bool IsIntoWorkSpace(Vector2 pos)
         {
             Rect workSpace = new Rect(TOOL_BUTTON_SIZE + BOX_AREA_OFFSET,
                 UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET,
