@@ -40,8 +40,7 @@ namespace ShapeTracer.Path
 
         private MeshFilter targetFilter
         {
-            get
-            {
+            get {
                 if (_targetFilter == null)
                 {
                     _targetFilter = GetComponent<MeshFilter>();
@@ -51,8 +50,7 @@ namespace ShapeTracer.Path
             }
         }
 
-        public PathData pathData
-        {
+        public PathData pathData {
             get { return _pathData; }
         }
 

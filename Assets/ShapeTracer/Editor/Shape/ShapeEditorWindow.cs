@@ -177,8 +177,9 @@ namespace ShapeTracer.Shapes
 
             float gridResolution = RemapToFirstPowerOfTen(pixelsPerUnits);
 
-            DrawGrid(gridResolution, 0.1f, false);
-            DrawGrid(gridResolution * 10.0f, 0.2f, true);
+            DrawGrid(gridResolution, 0.1f, false, Color.black);
+            DrawGrid(gridResolution * 10.0f, 0.2f, true, Color.black);
+			DrawGrid(1000f, 0.2f, false, Color.white);
             WindowNavigation();
 
             if (asset == null) return;
@@ -289,11 +290,18 @@ namespace ShapeTracer.Shapes
         {
             Event e = Event.current;
 
-
             if (e.isScrollWheel) //Zoom
             {
-                float zoom = pixelsPerUnits * Event.current.delta.y;
-                pixelsPerUnits = pixelsPerUnits - zoom * ZOOM_SENSIBILITY;
+				//Gets the zoom amount
+				float delta = e.delta.y;
+				float zoom = pixelsPerUnits * delta * ZOOM_SENSIBILITY;
+				Vector2 zoomDirection = GetWorkspaceMousePosition();
+				pixelsPerUnits = pixelsPerUnits - zoom;
+
+				//Add an offset from the center to zoom on the cursor position
+				zoomDirection = (GetWorkspaceMousePosition() - zoomDirection) * pixelsPerUnits;
+				zoomDirection.y *= -1;
+				spaceCenter += zoomDirection;
                 Repaint();
                 e.Use();
             }
@@ -302,8 +310,26 @@ namespace ShapeTracer.Shapes
                 spaceCenter += e.delta;
                 Repaint();
                 e.Use();
-            }
+            }else if (e.keyCode == KeyCode.F && e.type == EventType.KeyDown)
+			{
+				spaceCenter = new Vector2(position.width, position.height) / 2;
+				Repaint();
+				e.Use();
+			}
         }
+
+		private Vector2 GetScreenSpaceMousePosition()
+		{
+			Vector2 mousePos = Event.current.mousePosition;
+			mousePos.y = position.height - mousePos.y;
+			return mousePos;
+		}
+
+		private Vector2 GetWorkspaceMousePosition()
+		{
+			Vector2 pos = GetScreenSpaceMousePosition();
+			return WindowSpaceToPointSpace(Event.current.mousePosition);
+		}
 
         #endregion
 
@@ -655,7 +681,7 @@ namespace ShapeTracer.Shapes
 
         #region Grid
 
-        private void DrawGrid(float spacing, float opacity, bool displayUnits)
+        private void DrawGrid(float spacing, float opacity, bool displayUnits, Color color)
         {
             spacing *= BASE_GRID_RESOLUTION;
 
@@ -664,7 +690,9 @@ namespace ShapeTracer.Shapes
 
             Handles.BeginGUI();
 
-            Color gridColor = Color.black;
+			Color backupColor = Handles.color;
+
+            Color gridColor = color;
             gridColor.a = opacity;
 
             Handles.color = gridColor;
@@ -681,6 +709,8 @@ namespace ShapeTracer.Shapes
             {
                 Handles.DrawLine(new Vector2(v, 0), new Vector2(v, position.height));
             }
+
+			Handles.color = backupColor;
 
             Handles.EndGUI();
         }

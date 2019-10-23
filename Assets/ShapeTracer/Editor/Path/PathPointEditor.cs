@@ -90,10 +90,18 @@ namespace ShapeTracer.Path
                 _currentPath.pathData[index].normalAngle = 0;
             }
 
-
             EditorGUI.EndDisabledGroup();
+			EditorGUILayout.EndHorizontal();
 
-            EditorGUILayout.EndHorizontal();
+			EditorGUI.BeginChangeCheck();
+			//Empty path toggle
+			bool isEmpty = EditorGUILayout.Toggle("Empty", _currentPath.pathData[index].isEmpty);
+			if (EditorGUI.EndChangeCheck()) {
+				Undo.RecordObject(_currentPath, "Toggled Empty Point");
+				EditorUtility.SetDirty(_currentPath);
+				_currentPath.pathData[index].isEmpty = isEmpty;
+			}
+
             GUILayout.Space(4.0f);
             GUILayout.EndVertical();
             GUILayout.Space(15.0f);
@@ -236,8 +244,6 @@ namespace ShapeTracer.Path
             float handleSize = HandleUtility.GetHandleSize(pointWorldPos);
 
             Quaternion newRot = Handles.Disc(pivotRotation * roll, pointWorldPos,tangentDir, handleSize, false, 0.0f);
-
-            Handles.color *= new Color(1f, 0f, 0f, 1f);
             Handles.DrawLine(pointWorldPos + newRot * Vector3.left * handleSize, pointWorldPos + newRot * Vector3.right * handleSize);
 
             if (EditorGUI.EndChangeCheck())

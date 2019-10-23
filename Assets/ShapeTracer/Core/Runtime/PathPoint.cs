@@ -7,7 +7,7 @@ namespace ShapeTracer
     [System.Serializable]
     public class PathPoint
     {
-        #region Attributes
+        #region Settings
 
         [SerializeField] private Vector3 _position = Vector3.zero;
         [SerializeField] private Vector3 _normal = Vector3.up;
@@ -15,9 +15,13 @@ namespace ShapeTracer
         [SerializeField] private Vector3 _inTangent = Vector3.forward;
         [SerializeField] private Vector3 _outTangent = Vector3.back;
         [SerializeField] private float _normalAngle = 0.0f;
+		[SerializeField] private bool _isEmpty = false;
 
-        /// <summary> The position of the point in world space </summary>
-        public Vector3 position
+		#endregion
+
+		#region Properties
+		/// <summary> The position of the point in world space </summary>
+		public Vector3 position
         {
             get { return _position; }
             set { _position = value; }
@@ -31,13 +35,21 @@ namespace ShapeTracer
             set { _normal = value; }
         }
 
-        /*public Vector3 binormal
+		/// <summary> Does disable the mesh generation on this point </summary>
+		public bool isEmpty {
+			get { return _isEmpty; }
+			set { _isEmpty = value; }
+		}
+
+
+
+		/*public Vector3 binormal
         {
             get { return _binormal; }
             set { _binormal = value; }
         }*/
 
-        public float normalAngle
+		public float normalAngle
         {
             get { return _normalAngle; }
             set
