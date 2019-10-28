@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using System.Reflection;
+using System;
 
 namespace ShapeTracer.Shapes.Tools
 {

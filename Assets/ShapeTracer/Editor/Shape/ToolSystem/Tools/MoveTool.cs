@@ -5,9 +5,9 @@ using UnityEditor;
 
 namespace ShapeTracer.Shapes.Tools
 {
+	[ShapeToolIdentity("Move Tool", "Move the selected point on the workspace")]
     public class MoveTool : ShapeEditorTool
     {
-
         public MoveTool()
         {
             _name = "Move Tool";

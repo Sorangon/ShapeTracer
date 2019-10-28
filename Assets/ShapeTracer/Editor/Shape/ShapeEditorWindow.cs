@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using ShapeTracer.Shapes.Tools;
@@ -45,7 +46,7 @@ namespace ShapeTracer.Shapes
         /// The toolbox containing all the tools functions, bind tools in the RegisterTool() functions
         /// </summary>
         private Dictionary<string,Tool> _toolbox= new Dictionary<string, Tool>();
-        //private Dictionary<string, ShapeEditorTool> _tools = new Dictionary<string, ShapeEditorTool>();
+        private ShapeEditorTool[] _tools = { };
         private Tool _currentTool = null;
         private Tool _defaultTool = null;
         private bool _initializedTool = false;
@@ -127,7 +128,7 @@ namespace ShapeTracer.Shapes
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
             Reset();
             InitToolbox();
-            //FindTools();
+            FindShapeEditorTools();
         }
 
         public static void Edit(ShapeAsset asset)
@@ -138,16 +139,20 @@ namespace ShapeTracer.Shapes
             current.Reset();
         }
 
-        /*private void FindTools()
-        {
-            Type[] tools = Assembly.GetAssembly(typeof(ShapeEditorTool)).GetTypes();
-            for(int i = 0; i < tools.Length; i++)
-            {
-                Debug.Log(tools[i].GetType().FullName);
-            }
-        }*/
 
-        private void Reset()
+		private void FindShapeEditorTools()
+		{
+			List<ShapeEditorTool> tools = new List<ShapeEditorTool>();
+			foreach(Type type in Assembly.GetAssembly(typeof(ShapeEditorTool)).GetTypes().Where(mType => mType.IsClass && !mType.IsAbstract &&
+			mType.IsSubclassOf(typeof(ShapeEditorTool)))){
+				tools.Add((ShapeEditorTool)Activator.CreateInstance(type));
+			}
+
+			_tools = tools.ToArray();
+		}
+
+
+		private void Reset()
         {
             spaceCenter = new Vector2(position.width / 2, position.height / 2);
             selectedId = -1;
@@ -210,9 +215,9 @@ namespace ShapeTracer.Shapes
             float upPannelWidth = Mathf.Clamp(position.width - SHAPE_UTILITY_PANNEL_WIDTH,
                 260.0f,Mathf.Infinity);
 
-            Rect modeUtilityPannelRect = new Rect(TOOL_BUTTON_SIZE + BOX_AREA_OFFSET, 0
-                , upPannelWidth
-                , UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
+			Rect modeUtilityPannelRect = new Rect(TOOL_BUTTON_SIZE + BOX_AREA_OFFSET, 0
+				, upPannelWidth - TOOL_BUTTON_SIZE - BOX_AREA_OFFSET
+				, UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
             DrawArea(modeUtilityPannelRect, false, DrawModeUtilityPannel);
 
             Rect shapeUtilityPannelRect = new Rect(upPannelWidth, 0,

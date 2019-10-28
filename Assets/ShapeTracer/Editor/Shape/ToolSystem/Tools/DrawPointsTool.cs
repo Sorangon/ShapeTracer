@@ -5,6 +5,7 @@ using UnityEditor;
 
 namespace ShapeTracer.Shapes.Tools
 {
+	[ShapeToolIdentity("Draw Points", "Add or insert points on the shape")]
     public class DrawPointsTool : ShapeEditorTool
     {
         public DrawPointsTool()

@@ -128,6 +128,7 @@ namespace ShapeTracer.Path
             Vector3[] vertices = new Vector3[sectionVertexCount * (points + (_subdivisions - 1) * (points - 1))];
             Vector2[] uvs = new Vector2[vertices.Length];
 
+
             int shapeClosure = 1;
 
             int[] triangles = new int[((points - 1) * _subdivisions) * (6 * (sectionVertexCount - shapeClosure))];
