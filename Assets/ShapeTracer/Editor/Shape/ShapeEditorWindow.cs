@@ -11,45 +11,13 @@ namespace ShapeTracer.Shapes
 {
     public class ShapeEditorWindow : EditorWindow
     {
-        #region Sub Classes
+		#region Attributes
 
-        private class Tool
-        {
-            public string _name = "Tool";
-            public Action _behavior = null;
-            public bool _executionConditions = true;
-            public string _errorMessage = "Error : Cannot execute the tool behavior";
-            //public KeyCode _shortCut; //TODO : shortcut support
+		public ShapeAsset asset = null;
 
-            public Tool(string name, Action behavior)
-            {
-                _name = name;
-                _behavior = behavior;
-            }
-
-            public Tool(string name, Action behavior, bool executionConditions, string errorMessage)
-            {
-                _name = name;
-                _behavior = behavior;
-                _executionConditions = executionConditions;
-                _errorMessage = errorMessage;
-            }
-        }
-
-        #endregion
-
-        #region Attributes
-
-        public ShapeAsset asset = null;
-
-        /// <summary>
-        /// The toolbox containing all the tools functions, bind tools in the RegisterTool() functions
-        /// </summary>
-        private Dictionary<string,Tool> _toolbox= new Dictionary<string, Tool>();
         private ShapeEditorTool[] _tools = { };
-        private Tool _currentTool = null;
-        private Tool _defaultTool = null;
-        private bool _initializedTool = false;
+        private ShapeEditorTool _currentTool = null;
+        private ShapeEditorTool _defaultTool = null;
         public bool showSelected = true;
 
         public bool selectionFlag = true;
@@ -119,7 +87,6 @@ namespace ShapeTracer.Shapes
         #endregion
 
 
-
         #region Init/Disable
 
         private void OnEnable()
@@ -127,7 +94,6 @@ namespace ShapeTracer.Shapes
             _isActive = true;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
             Reset();
-            InitToolbox();
             FindShapeEditorTools();
         }
 
@@ -142,13 +108,32 @@ namespace ShapeTracer.Shapes
 
 		private void FindShapeEditorTools()
 		{
-			List<ShapeEditorTool> tools = new List<ShapeEditorTool>();
+			SortedList<int, ShapeEditorTool> tools = new SortedList<int, ShapeEditorTool>();
 			foreach(Type type in Assembly.GetAssembly(typeof(ShapeEditorTool)).GetTypes().Where(mType => mType.IsClass && !mType.IsAbstract &&
 			mType.IsSubclassOf(typeof(ShapeEditorTool)))){
-				tools.Add((ShapeEditorTool)Activator.CreateInstance(type));
+				GUIContent content = new GUIContent();
+				ShapeEditorTool tool = (ShapeEditorTool)Activator.CreateInstance(type, this);
+				int order = 10000;
+				var toolIdentity = (ShapeToolIdentityAttribute)Attribute.GetCustomAttribute(tool.GetType(), typeof(ShapeToolIdentityAttribute));
+				if(toolIdentity != null)
+				{
+					content.text = toolIdentity.name;
+					content.tooltip = toolIdentity.tooltip;
+					order = toolIdentity.order;
+				}
+				else
+				{
+					content.text = tool.GetType().Name;
+				}
+				tool.content = content;
+				tools.Add(order, tool);		
 			}
 
-			_tools = tools.ToArray();
+			_tools = new ShapeEditorTool[tools.Count];
+			for (int i = 0; i < tools.Count; i++)
+			{
+				_tools[i] = tools.ElementAt(i).Value;
+			}
 		}
 
 
@@ -190,7 +175,10 @@ namespace ShapeTracer.Shapes
             if (asset == null) return;
 
 
-            ProcessTool();
+            if(_currentTool != null)
+			{
+				_currentTool.Process(this);
+			}
 
             int pointsToDisplay = asset.shape.pointCount - (asset.shape.closeShape ? 1 : 0);
 
@@ -447,44 +435,29 @@ namespace ShapeTracer.Shapes
 
         #region Toolbox
 
-        #region Init Tools
-
-        /// <summary>
-        /// Register all the tools function to the toolbx dictionnary
-        /// </summary>
-        private void InitToolbox()
-        {
-            _defaultTool = new Tool("Move", MoveSelectedPoint);
-            _toolbox.Add("MovePoint", _defaultTool);
-
-            _toolbox.Add("DrawPoints", new Tool("Draw\nPoints", DrawPoints));
-
-            _currentTool = _defaultTool;
-        }
-
-        #endregion
-
         #region Tool Pannel
-
-        private void DrawToolButton(Tool tool, bool additionnalConditions = true)
+		 /// <summary>
+		 /// Draws the tool buttons pannel
+		 /// </summary>
+		 /// <param name="tool"></param>
+        private void DrawToolButton(ShapeEditorTool tool)
         {
             Color lastColor = GUI.backgroundColor;
             Color buttonColor = (tool == _currentTool ? new Color(0.4f, 0.4f, 0.4f) : Color.white);
 
             GUI.backgroundColor = buttonColor;
 
-            if (GUILayout.Button(tool._name, GUILayout.Width(TOOL_BUTTON_SIZE), GUILayout.Height(TOOL_BUTTON_SIZE)))
+            if (GUILayout.Button(tool.content, GUILayout.Width(TOOL_BUTTON_SIZE), GUILayout.Height(TOOL_BUTTON_SIZE)))
             {
                 if(_currentTool != tool)
                 {
                     _currentTool = tool;
+					_currentTool.Init(this); //Initialize the tool
                 }
                 else
                 {
                     _currentTool = _defaultTool; //Toggle off
                 }
-
-                _initializedTool = false;
             }
 
             GUI.backgroundColor = lastColor;
@@ -496,133 +469,9 @@ namespace ShapeTracer.Shapes
         /// </summary>
         private void DrawToolPannel()
         {
-            //DrawToolButton("Draw\nPoints", DrawPoints);
-
-            foreach(KeyValuePair<string, Tool> tool in _toolbox)
+            foreach(ShapeEditorTool tool in _tools)
             {
-                DrawToolButton(tool.Value);
-            }
-        }
-
-        #endregion
-
-        #region Tools
-
-        /// <summary>
-        /// Adds a point to the shape
-        /// </summary>
-        private void DrawPoints()
-        {
-            showSelected = false;
-
-            if(_initializedTool == false)
-            {
-                _selectedId = -1; //Reset Selection
-            }
-
-
-            Handles.BeginGUI();
-            Handles.color = Color.yellow;
-
-            Vector2 mousePos = Event.current.mousePosition;
-
-            //Snap
-            if (Event.current.control == true)
-            {
-                mousePos = SnapToGrid( mousePos);
-            }
-
-            if (asset.shape.closeShape == true && asset.shape.pointCount > 1)
-            {
-                Vector2 lastPoint = PointSpaceToWindowSpace(asset.shape.GetPointPosition(asset.shape.pointCount - 2));
-                Vector2 firstPoint = PointSpaceToWindowSpace(asset.shape.GetPointPosition(0));
-
-                Handles.DrawLine(lastPoint, mousePos);
-                Handles.DrawLine(firstPoint, mousePos);
-            }
-            else if(asset.shape.closeShape == false && asset.shape.pointCount > 0)
-            {
-                Vector2 fromPoint = PointSpaceToWindowSpace(asset.shape.GetPointPosition(asset.shape.pointCount - 1));
-                Handles.DrawLine(fromPoint, mousePos);
-            }
-
-            Handles.DotHandleCap(0, mousePos, Quaternion.identity, 5.0f, EventType.Repaint);
-
-            if(Event.current.button == 0 && Event.current.type == EventType.MouseDown && IsIntoWorkSpace(mousePos))
-            {
-                Undo.RecordObject(asset, "Add Point");
-                EditorUtility.SetDirty(asset);
-                asset.shape.AddPoint(WindowSpaceToPointSpace(mousePos));
-                Event.current.Use();
-                Repaint();
-            }
-                
-
-            Repaint();
-
-            Handles.color = Color.white;
-            Handles.EndGUI();
-        }
-
-        /// <summary>
-        /// Moves the selected point
-        /// </summary>
-        /// <param name="index"></param>
-        /// <param name="pointPos"></param>
-        private void MoveSelectedPoint()
-        {
-            if (selectedId < 0) return;
-
-            BeginWindows();
-            GUI.Window(0, new Rect(position.width - 200, position.height - 100, 180, 80), DisplayPointPositionWindow, "Point Position");
-            EndWindows();
-
-            Handles.color = Color.green;
-
-            Vector2 pointPos = PointSpaceToWindowSpace( asset.shape.GetPointPosition(_selectedId));
-
-            if(Event.current.button == 0 && Event.current.type == EventType.MouseDrag)
-            {
-                Undo.RecordObject(asset, "Move Shape Point");
-                EditorUtility.SetDirty(asset);
-
-                selectionFlag = true;
-
-                Event e = Event.current;
-                Vector2 newPos = e.mousePosition;
-
-                //Snap on ctrl old
-                if (e.control == true)
-                {
-                    newPos = SnapToGrid( newPos);
-                }
-
-                newPos = WindowSpaceToPointSpace(newPos);
-                asset.shape.SetPointPosition(_selectedId, newPos);
-
-                Repaint();
-            }
-        }
-
-        #endregion
-
-        #region Tool process
-
-        private void ProcessTool()
-        {
-            if(_currentTool != null)
-            {
-                _currentTool._behavior.Invoke();
-            }
-            else
-            {
-                if(_defaultTool != null)
-                    _defaultTool._behavior.Invoke();
-            }
-
-            if(_initializedTool == false)
-            {
-                _initializedTool = true;
+                DrawToolButton(tool);
             }
         }
 

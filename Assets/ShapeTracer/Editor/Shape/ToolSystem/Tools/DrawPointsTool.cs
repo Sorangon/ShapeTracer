@@ -5,16 +5,9 @@ using UnityEditor;
 
 namespace ShapeTracer.Shapes.Tools
 {
-	[ShapeToolIdentity("Draw Points", "Add or insert points on the shape")]
+	[ShapeToolIdentity("Draw", "Add or insert points on the shape", 10)]
     public class DrawPointsTool : ShapeEditorTool
     {
-        public DrawPointsTool()
-        {
-            _name = "Draw Point Tool";
-            _content.text = "Draw\nPoints";
-            _content.tooltip = "Draw a point at the left click position";
-        }
-
         public override void Process(ShapeEditorWindow editor)
         {
             editor.showSelected = false;

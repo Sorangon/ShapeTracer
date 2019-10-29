@@ -5,25 +5,29 @@ using UnityEditor;
 
 namespace ShapeTracer.Shapes.Tools
 {
-	[ShapeToolIdentity("Move Tool", "Move the selected point on the workspace")]
+	[ShapeToolIdentity("Move", "Move the selected point on the workspace", 0)]
     public class MoveTool : ShapeEditorTool
     {
-        public MoveTool()
-        {
-            _name = "Move Tool";
-            _content.text = "Move";
-            _content.tooltip = "Moves the selected point";
-        }
+		#region Current State
 
-        public override void Process(ShapeEditorWindow editor)
+		private ShapeEditorWindow _editor = null;
+
+		#endregion
+
+		public override void Init(ShapeEditorWindow editor)
+		{
+			_editor = editor;
+		}
+
+		public override void Process(ShapeEditorWindow editor)
         {
             if (editor.selectedId < 0) return;
 
-            /*editor.BeginWindows();
-            GUI.Window(0, new Rect(editor.position.width - 200, editor.position.height - 100, 180, 80), DisplayPointPositionWindow, "Point Position");
-            editor.EndWindows();*/
+			editor.BeginWindows();
+			GUI.Window(0, new Rect(editor.position.width - 200, editor.position.height - 100, 180, 80), DisplayPointPositionWindow, "Point Position");
+			editor.EndWindows();
 
-            Handles.color = Color.green;
+			Handles.color = Color.green;
 
             Vector2 pointPos = editor.PointSpaceToWindowSpace(editor.asset.shape.GetPointPosition(editor.selectedId));
 
@@ -50,14 +54,14 @@ namespace ShapeTracer.Shapes.Tools
             }
         }
 
-        /// <summary>
-        /// Displays the current edited point settings
-        /// </summary>
-        /// <param name="id"></param>
-        /*private void DisplayPointPositionWindow()
-        {
-            editor.asset.shape.SetPointPosition(editor.selectedId,
-                EditorGUILayout.Vector2Field("Point " + editor.selectedId, editor.asset.shape.GetPointPosition(editor.selectedId)));
-        }*/
-    }
+		/// <summary>
+		/// Displays the current edited point settings
+		/// </summary>
+		/// <param name="id"></param>
+		private void DisplayPointPositionWindow(int windowId)
+		{
+			_editor.asset.shape.SetPointPosition(_editor.selectedId,
+				EditorGUILayout.Vector2Field("Point " + _editor.selectedId, _editor.asset.shape.GetPointPosition(_editor.selectedId)));
+		}
+	}
 }
