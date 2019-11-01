@@ -5,11 +5,10 @@ using UnityEngine;
 namespace ShapeTracer {
 	[System.Serializable]
 	public class PathPoint {
-		#region Settings
+		#region Data
 
 		[SerializeField] private Vector3 _position = Vector3.zero;
 		[SerializeField] private Vector3 _normal = Vector3.up;
-		//[SerializeField] private Vector3 _binormal = Vector3.right;
 		[SerializeField] private Vector3 _inTangent = Vector3.forward;
 		[SerializeField] private Vector3 _outTangent = Vector3.back;
 		[SerializeField] private float _normalAngle = 0.0f;
@@ -85,6 +84,10 @@ namespace ShapeTracer {
 
 		#region Methods
 
+		/// <summary>
+		/// Return the position of the tangent relatively to his point
+		/// </summary>
+		/// <param name="tangent"></param>
 		public Vector3 GetPointSpaceTangent(PathTangentType tangent) {
 			if (tangent == PathTangentType.In) {
 				return _inTangent;
@@ -97,34 +100,58 @@ namespace ShapeTracer {
 			}
 		}
 
+		/// <summary>
+		/// Set the position of the tangent relatively to his point
+		/// </summary>
+		/// <param name="tangent"></param>
+		/// <param name="newPos"></param>
+		/// <param name="mirrorTangents"></param>
+		/// <param name="mirrorScale"></param>
 		public void SetPointSpaceTangent(PathTangentType tangent, Vector3 newPos, bool mirrorTangents, bool mirrorScale) {
 			if (tangent == PathTangentType.In) {
+				Vector3 deltaDirection = newPos - _inTangent;
+				float deltaScale = deltaDirection.magnitude * Vector3.Dot(deltaDirection.normalized, _inTangent.normalized);
+
 				_inTangent = newPos;
 				if (mirrorTangents) {
 					_outTangent = -_inTangent.normalized * _outTangent.magnitude;
 				}
 
 				if (mirrorScale) {
-					_outTangent = _outTangent.normalized * _inTangent.magnitude;
+					_outTangent += _outTangent.normalized * deltaScale;
 				}
 
 			}
 			else if (tangent == PathTangentType.Out) {
+				Vector3 deltaDirection = newPos - _outTangent;
+				float deltaScale = deltaDirection.magnitude * Vector3.Dot(deltaDirection.normalized, _outTangent.normalized);
+
 				_outTangent = newPos;
 				if (mirrorTangents) {
 					_inTangent = -_outTangent.normalized * _inTangent.magnitude;
 				}
 
 				if (mirrorScale) {
-					_inTangent = _inTangent.normalized * _outTangent.magnitude;
+					_inTangent += _inTangent.normalized * deltaScale;
 				}
 			}
 		}
 
+		/// <summary>
+		/// Return the position of the tangent relatively to the object 
+		/// </summary>
+		/// <param name="tangent"></param>
 		public Vector3 GetObjectSpaceTangent(PathTangentType tangent) {
 			return GetPointSpaceTangent(tangent) + _position;
 		}
 
+		/// <summary>
+		/// Return the position of the tangent relatively to the object 
+		/// </summary>
+		/// <param name="tangent"></param>
+		/// <param name="newPos"></param>
+		/// <param name="mirrorTangents"></param>
+		/// <param name="mirrorScale"></param>
 		public void SetObjectSpaceTangent(PathTangentType tangent, Vector3 newPos, bool mirrorTangents, bool mirrorScale) {
 			SetPointSpaceTangent(tangent, newPos - _position, mirrorTangents, mirrorScale);
 		}

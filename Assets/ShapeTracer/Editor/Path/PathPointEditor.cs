@@ -7,13 +7,20 @@ namespace ShapeTracer.Path
 {
     public static class PathPointEditor
     {
-        #region Attributes
+		#region Constants
 
-        private static int _selectedId = -1;
+		private const float POINT_HANDLE_SIZE = 0.3f; 
+
+		#endregion
+
+		#region Current
+
+		private static int _selectedId = -1;
         private static PathTangentType _selectedTangent =  (PathTangentType)(-1);
         private static ShapeTracerPath _currentPath = null;
         private static bool _displayNormal = false;
         private static float _lastDeltaRotation = 0.0f;
+		private static float _deltaTangentMove;
 
         #region Accessors
         /// <summary> Current edited point id </summary>
@@ -148,10 +155,10 @@ namespace ShapeTracer.Path
                 Handles.color = Color.green;
             }
 
-            float handleSize = HandleUtility.GetHandleSize(handlePosition);
+            float handleSize = HandleUtility.GetHandleSize(handlePosition) * 0.5f;
 
 
-            if (Handles.Button(handlePosition, Quaternion.identity, 0.3f * handleSize, 0.4f * handleSize, Handles.SphereHandleCap))
+            if (Handles.Button(handlePosition, Quaternion.identity, POINT_HANDLE_SIZE * handleSize, POINT_HANDLE_SIZE  * 1.1f * handleSize, Handles.SphereHandleCap))
             {
                 SelectPoint(index);
                 if(Tools.hidden == false)
@@ -179,7 +186,7 @@ namespace ShapeTracer.Path
                     Vector3 tangentPos = _currentPath.transform.position + point.GetObjectSpaceTangent((PathTangentType)i);
                     Handles.DrawAAPolyLine(6, tangentPos, handlePos);
 
-                    if (Handles.Button(tangentPos, Quaternion.identity, 0.3f * handleSize, 0.4f * handleSize, Handles.SphereHandleCap))
+                    if (Handles.Button(tangentPos, Quaternion.identity, POINT_HANDLE_SIZE * handleSize, POINT_HANDLE_SIZE * 1.1f * handleSize, Handles.SphereHandleCap))
                     {
                         _selectedTangent = (PathTangentType)i;
                     }
@@ -209,7 +216,10 @@ namespace ShapeTracer.Path
 
                 //Edits the position of the selected tangent
                 Vector3 newPos = MovePoint(point.GetObjectSpaceTangent(_selectedTangent) + handlePos);
-                _currentPath.pathData[selectedId].SetObjectSpaceTangent(_selectedTangent, newPos, true, false);
+
+				bool mirrorScale = !Event.current.alt;
+
+                _currentPath.pathData[selectedId].SetObjectSpaceTangent(_selectedTangent, newPos, true, mirrorScale);
             }          
         }
 
