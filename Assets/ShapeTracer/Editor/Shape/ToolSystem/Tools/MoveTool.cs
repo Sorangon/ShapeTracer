@@ -3,65 +3,45 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace ShapeTracer.Shapes.Tools
-{
-	[ShapeToolIdentity("Move", "Move the selected point on the workspace", 0)]
-    public class MoveTool : ShapeEditorTool
-    {
-		#region Current State
+namespace ShapeTracer.Shapes.Tools {
+	[ShapeTool("Move", "Move the selected point on the workspace", 0)]
+	public class MoveTool : ShapeEditorTool {
 
-		private ShapeEditorWindow _editor = null;
+		public override void Process() {
+			if (Editor.SelectedId < 0) return;
 
-		#endregion
-
-		public override void Init(ShapeEditorWindow editor)
-		{
-			_editor = editor;
-		}
-
-		public override void Process(ShapeEditorWindow editor)
-        {
-            if (editor.selectedId < 0) return;
-
-			editor.BeginWindows();
-			GUI.Window(0, new Rect(editor.position.width - 200, editor.position.height - 100, 180, 80), DisplayPointPositionWindow, "Point Position");
-			editor.EndWindows();
+			Editor.BeginWindows();
+			GUI.Window(0, new Rect(Editor.position.width - 200, Editor.position.height - 100, 180, 80), DisplayPointPositionWindow, "Point Position");
+			Editor.EndWindows();
 
 			Handles.color = Color.green;
 
-            Vector2 pointPos = editor.PointSpaceToWindowSpace(editor.asset.shape.GetPointPosition(editor.selectedId));
+			if (Event.current.button == 0 && Event.current.type == EventType.MouseDrag) {
+				Undo.RecordObject(Editor.Asset, "Move Shape Point");
+				EditorUtility.SetDirty(Editor.Asset);
 
-            if (Event.current.button == 0 && Event.current.type == EventType.MouseDrag)
-            {
-                Undo.RecordObject(editor.asset, "Move Shape Point");
-                EditorUtility.SetDirty(editor.asset);
+				Event e = Event.current;
+				Vector2 newPos = e.mousePosition;
 
-                editor.selectionFlag = true;
+				//Snap on ctrl old
+				if (e.control == true) {
+					newPos = Editor.SnapToGrid(newPos);
+				}
 
-                Event e = Event.current;
-                Vector2 newPos = e.mousePosition;
+				newPos = Editor.WindowSpaceToPointSpace(newPos);
+				Editor.Asset.shape.SetPointPosition(Editor.SelectedId, newPos);
 
-                //Snap on ctrl old
-                if (e.control == true)
-                {
-                    newPos = editor.SnapToGrid(newPos);
-                }
-
-                newPos = editor.WindowSpaceToPointSpace(newPos);
-                editor.asset.shape.SetPointPosition(editor.selectedId, newPos);
-
-                editor.Repaint();
-            }
-        }
+				Editor.Repaint();
+			}
+		}
 
 		/// <summary>
 		/// Displays the current edited point settings
 		/// </summary>
 		/// <param name="id"></param>
-		private void DisplayPointPositionWindow(int windowId)
-		{
-			_editor.asset.shape.SetPointPosition(_editor.selectedId,
-				EditorGUILayout.Vector2Field("Point " + _editor.selectedId, _editor.asset.shape.GetPointPosition(_editor.selectedId)));
+		private void DisplayPointPositionWindow(int windowId) {
+			Editor.Asset.shape.SetPointPosition(Editor.SelectedId,
+				EditorGUILayout.Vector2Field("Point " + Editor.SelectedId, Editor.Asset.shape.GetPointPosition(Editor.SelectedId)));
 		}
 	}
 }

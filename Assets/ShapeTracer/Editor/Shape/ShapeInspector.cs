@@ -21,7 +21,7 @@ namespace ShapeTracer.Shapes
         {
             _target = (ShapeAsset)target;
 
-            if (ShapeEditorWindow.isActive)
+            if (ShapeEditorWindow.IsActive)
             {
                 ShapeEditorWindow.Edit(_target);
             }

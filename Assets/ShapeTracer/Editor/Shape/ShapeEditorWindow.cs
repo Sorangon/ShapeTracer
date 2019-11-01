@@ -7,284 +7,266 @@ using UnityEngine;
 using UnityEditor;
 using ShapeTracer.Shapes.Tools;
 
-namespace ShapeTracer.Shapes
-{
-    public class ShapeEditorWindow : EditorWindow
-    {
-		#region Attributes
+namespace ShapeTracer.Shapes {
+	public class ShapeEditorWindow : EditorWindow {
 
-		public ShapeAsset asset = null;
+		#region Properties
 
-        private ShapeEditorTool[] _tools = { };
-        private ShapeEditorTool _currentTool = null;
-        private ShapeEditorTool _defaultTool = null;
-        public bool showSelected = true;
+		/// <summary>
+		/// Does the selection is enabled, reset to true on tool change
+		/// </summary>
+		public bool enabledSelection = true;
 
-        public bool selectionFlag = true;
+		public ShapeAsset Asset => _asset;
 
-        private static bool _isActive = false;
+		public int SelectedId {
+			get {
+				if (_selectedId > _asset.shape.PointCount - 1) {
+					return -1; //reset
+				}
+				else {
+					return _selectedId;
+				}
+			}
+			set { _selectedId = value; }
+		}
 
-        private float pixelsPerUnits = 200.0f;
+		public static bool IsActive => _isActive;
 
-        private Vector2 spaceCenter = Vector2.zero;
+		#region Private
 
-        private int _selectedId = -1;
-        public int selectedId
-        {
-            get
-            {
-                if(_selectedId > asset.shape.pointCount - 1)
-                {
-                    return -1; //reset
-                }
-                else
-                {
-                    return _selectedId;
-                }
-            }
-            set { _selectedId = value; }
-        }
+		private Texture2D _backgroundTexture {
+			get {
+				if (_bTex == null) {
+					_bTex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+					_bTex.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.3f));
+					_bTex.Apply();
+				}
 
-        private Texture2D _bTex;
-        private Texture2D _backgroundTexture
-        {
-            get
-            {
-                if(_bTex == null)
-                {
-                    _bTex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-                    _bTex.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.3f));
-                    _bTex.Apply();
-                }
+				return _bTex;
+			}
+		}
 
-                return _bTex;
-            }
-        }
+		#endregion
 
+		#endregion
 
-        #region Accessors
+		#region Current state
+		private ShapeAsset _asset = null;
 
-        public static bool isActive { get { return _isActive; } }
+		private ShapeEditorTool[] _tools = { };
+		private ShapeEditorTool _currentTool = null;
 
-        #endregion
+		private static bool _isActive = false;
 
-        #endregion
+		private float pixelsPerUnits = 200.0f;
 
-        #region Constants
+		private Vector2 spaceCenter = Vector2.zero;
 
-        private const float UTILITY_BUTTON_HEIGHT = 20.0f;
-        private const float UTILITY_BUTTON_WIDTH = 80.0f;
+		private int _selectedId = -1;
 
-        private const float TOOL_BUTTON_SIZE = 50.0f;
+		private Texture2D _bTex;
+		#endregion
 
-        private const float SHAPE_UTILITY_PANNEL_WIDTH = 250.0f;
+		#region Constants
+		
+		private const float UTILITY_BUTTON_HEIGHT = 20.0f;
+		private const float UTILITY_BUTTON_WIDTH = 80.0f;
 
-        private const float ZOOM_SENSIBILITY = 0.022f;
-        private const float BASE_GRID_RESOLUTION = 10.0f;
+		private const float TOOL_BUTTON_SIZE = 50.0f;
 
-        private const float BOX_AREA_OFFSET = 8.0f;
+		private const float SHAPE_UTILITY_PANNEL_WIDTH = 250.0f;
 
-        #endregion
+		private const float ZOOM_SENSIBILITY = 0.022f;
+		private const float BASE_GRID_RESOLUTION = 10.0f;
 
+		private const float BOX_AREA_OFFSET = 8.0f;
 
-        #region Init/Disable
+		public const int NULL_POINT = -1;
 
-        private void OnEnable()
-        {
-            _isActive = true;
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
-            Reset();
-            FindShapeEditorTools();
-        }
-
-        public static void Edit(ShapeAsset asset)
-        {
-            ShapeEditorWindow current = GetWindow<ShapeEditorWindow>("Shape Editor");
-            current.asset = asset;
-            current.Show();
-            current.Reset();
-        }
+		#endregion
 
 
-		private void FindShapeEditorTools()
-		{
+		#region Init/Disable
+
+		private void OnEnable() {
+			_isActive = true;
+			Undo.undoRedoPerformed += OnUndoRedoPerformed;
+			Reset();
+			FindShapeEditorTools();
+		}
+
+		public static void Edit(ShapeAsset asset) {
+			ShapeEditorWindow current = GetWindow<ShapeEditorWindow>("Shape Editor");
+			current._asset = asset;
+			current.Show();
+			current.Reset();
+		}
+
+
+		private void FindShapeEditorTools() {
 			SortedList<int, ShapeEditorTool> tools = new SortedList<int, ShapeEditorTool>();
-			foreach(Type type in Assembly.GetAssembly(typeof(ShapeEditorTool)).GetTypes().Where(mType => mType.IsClass && !mType.IsAbstract &&
-			mType.IsSubclassOf(typeof(ShapeEditorTool)))){
+			foreach (Type type in Assembly.GetAssembly(typeof(ShapeEditorTool)).GetTypes().Where(mType => mType.IsClass && !mType.IsAbstract &&
+			 mType.IsSubclassOf(typeof(ShapeEditorTool)))) {
 				GUIContent content = new GUIContent();
 				ShapeEditorTool tool = (ShapeEditorTool)Activator.CreateInstance(type, this);
 				int order = 10000;
-				var toolIdentity = (ShapeToolIdentityAttribute)Attribute.GetCustomAttribute(tool.GetType(), typeof(ShapeToolIdentityAttribute));
-				if(toolIdentity != null)
-				{
-					content.text = toolIdentity.name;
-					content.tooltip = toolIdentity.tooltip;
-					order = toolIdentity.order;
+
+				//Get tool identity
+				var toolIdentity = (ShapeToolAttribute)Attribute.GetCustomAttribute(tool.GetType(), typeof(ShapeToolAttribute));
+				if (toolIdentity != null) {
+					content.text = toolIdentity.Name;
+					content.tooltip = toolIdentity.Tooltip;
+					order = toolIdentity.Order;
 				}
-				else
-				{
+				else {
 					content.text = tool.GetType().Name;
 				}
+				tool.SetEditor(this); //Set the owner editor
 				tool.content = content;
-				tools.Add(order, tool);		
+				tools.Add(order, tool);
 			}
 
 			_tools = new ShapeEditorTool[tools.Count];
-			for (int i = 0; i < tools.Count; i++)
-			{
+			for (int i = 0; i < tools.Count; i++) {
 				_tools[i] = tools.ElementAt(i).Value;
+			}
+
+			if(_tools.Length > 0) {
+				_currentTool = _tools[0];
 			}
 		}
 
 
-		private void Reset()
-        {
-            spaceCenter = new Vector2(position.width / 2, position.height / 2);
-            selectedId = -1;
-            pixelsPerUnits = 200.0f;
-        }
-       
-        private void OnDisable()
-        {
-            _isActive = false;
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-        }
+		private void Reset() {
+			spaceCenter = new Vector2(position.width / 2, position.height / 2);
+			SelectedId = -1;
+			pixelsPerUnits = 200.0f;
+		}
+
+		private void OnDisable() {
+			_isActive = false;
+			Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+		}
 
 
-        #endregion
+		#endregion
 
-        #region GUI
+		#region GUI
 
-        private void OnGUI()
-        {
-            if(Event.current.button == 0 && Event.current.type == EventType.MouseUp && IsIntoWorkSpace(Event.current.mousePosition))
-            {
-                selectionFlag = false;
-            }
+		private void OnGUI() {
+			Rect windowRect = new Rect(0, 0, position.width, position.height);
+			GUI.DrawTexture(windowRect, _backgroundTexture, ScaleMode.StretchToFill);
 
-            Rect windowRect = new Rect(0, 0, position.width, position.height);
-            GUI.DrawTexture(windowRect, _backgroundTexture, ScaleMode.StretchToFill);
+			float gridResolution = RemapToFirstPowerOfTen(pixelsPerUnits);
 
-            float gridResolution = RemapToFirstPowerOfTen(pixelsPerUnits);
-
-            DrawGrid(gridResolution, 0.1f, false, Color.black);
-            DrawGrid(gridResolution * 10.0f, 0.2f, true, Color.black);
+			DrawGrid(gridResolution, 0.1f, false, Color.black);
+			DrawGrid(gridResolution * 10.0f, 0.2f, true, Color.black);
 			DrawGrid(1000f, 0.2f, false, Color.white);
-            WindowNavigation();
+			WindowNavigation();
 
-            if (asset == null) return;
+			if (_asset == null) return;
 
-
-            if(_currentTool != null)
-			{
-				_currentTool.Process(this);
+			//Process current selected tool
+			if (_currentTool != null) {
+				_currentTool.Process();
 			}
 
-            int pointsToDisplay = asset.shape.pointCount - (asset.shape.closeShape ? 1 : 0);
+			//Manage point display and controls
+			int pointsToDisplay = _asset.shape.PointCount - (_asset.shape.closeShape ? 1 : 0);
+			if (enabledSelection) {
+				SelectPoints();
+			}
 
-            DisplayPoints();
+			DisplayPoints();
+			DisplayEdges();
 
-            DisplayEdges();
+			//Display pannels
+			Color lastBaseColor = GUI.color;
+			GUI.color = new Color(0.5f, 0.5f, 0.5f);
 
+			GUI.Box(new Rect(0, 0,
+				TOOL_BUTTON_SIZE + BOX_AREA_OFFSET, UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET), new GUIContent());
 
-            Color lastBaseColor = GUI.color;
-            GUI.color = new Color(0.5f, 0.5f, 0.5f);
+			GUI.color = lastBaseColor;
 
-            GUI.Box(new Rect(0, 0,
-                TOOL_BUTTON_SIZE + BOX_AREA_OFFSET, UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET), new GUIContent());
+			Rect toolPannelRect = new Rect(0, UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET
+				, TOOL_BUTTON_SIZE + BOX_AREA_OFFSET
+				, position.height - UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
+			DrawArea(toolPannelRect, true, DrawToolPannel);
 
-            GUI.color = lastBaseColor;
-
-            Rect toolPannelRect = new Rect(0, UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET
-                , TOOL_BUTTON_SIZE + BOX_AREA_OFFSET
-                , position.height - UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
-            DrawArea(toolPannelRect, true, DrawToolPannel);
-
-            float upPannelWidth = Mathf.Clamp(position.width - SHAPE_UTILITY_PANNEL_WIDTH,
-                260.0f,Mathf.Infinity);
+			float upPannelWidth = Mathf.Clamp(position.width - SHAPE_UTILITY_PANNEL_WIDTH,
+				260.0f, Mathf.Infinity);
 
 			Rect modeUtilityPannelRect = new Rect(TOOL_BUTTON_SIZE + BOX_AREA_OFFSET, 0
 				, upPannelWidth - TOOL_BUTTON_SIZE - BOX_AREA_OFFSET
 				, UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
-            DrawArea(modeUtilityPannelRect, false, DrawModeUtilityPannel);
+			DrawArea(modeUtilityPannelRect, false, DrawModeUtilityPannel);
 
-            Rect shapeUtilityPannelRect = new Rect(upPannelWidth, 0,
-                SHAPE_UTILITY_PANNEL_WIDTH,
-                UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
+			Rect shapeUtilityPannelRect = new Rect(upPannelWidth, 0,
+				SHAPE_UTILITY_PANNEL_WIDTH,
+				UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
 
-            DrawArea(shapeUtilityPannelRect, false, DrawShapeUtilityPannel);
-            CheckShortuts();
+			DrawArea(shapeUtilityPannelRect, false, DrawShapeUtilityPannel);
 
-            showSelected = true;
-
-            if (selectionFlag == false && _selectedId >= 0)
-            {
-                _selectedId = -1;
-                Repaint();
-            }
-        }
+			//Check inputs
+			CheckShortuts();
+		}
 
 
-        private void DrawArea(Rect rect, bool isVertical, Action drawFunction)
-        {
-            Rect areaRect = rect;
+		private void DrawArea(Rect rect, bool isVertical, Action drawFunction) {
+			Rect areaRect = rect;
 
-            areaRect.height -= BOX_AREA_OFFSET;
-            areaRect.y += BOX_AREA_OFFSET / 2;
-            areaRect.width -= BOX_AREA_OFFSET;
-            areaRect.x += BOX_AREA_OFFSET / 2;
+			areaRect.height -= BOX_AREA_OFFSET;
+			areaRect.y += BOX_AREA_OFFSET / 2;
+			areaRect.width -= BOX_AREA_OFFSET;
+			areaRect.x += BOX_AREA_OFFSET / 2;
 
-            GUI.Box(rect, new GUIContent());
-            GUILayout.BeginArea(areaRect);
+			GUI.Box(rect, new GUIContent());
+			GUILayout.BeginArea(areaRect);
 
-            if (isVertical)
-            {
-                EditorGUILayout.BeginVertical();
-            }
-            else
-            {
-                EditorGUILayout.BeginHorizontal();
-            }
+			if (isVertical) {
+				EditorGUILayout.BeginVertical();
+			}
+			else {
+				EditorGUILayout.BeginHorizontal();
+			}
 
-            drawFunction.Invoke();
+			drawFunction.Invoke();
 
 
-            if (isVertical)
-            {
-                EditorGUILayout.EndVertical();
-            }
-            else
-            {
-                EditorGUILayout.EndHorizontal();
-            }
+			if (isVertical) {
+				EditorGUILayout.EndVertical();
+			}
+			else {
+				EditorGUILayout.EndHorizontal();
+			}
 
 
-            GUILayout.EndArea();
-        }
+			GUILayout.EndArea();
+		}
 
-        #endregion
+		#endregion
 
-        #region Shortcuts
-        private void CheckShortuts()
-        {
-            Event e = Event.current;
+		#region Shortcuts
+		private void CheckShortuts() {
+			Event e = Event.current;
 
-            if(e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
-            {
-                _currentTool = _defaultTool;
-            }
-        }
+			if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape) {
+				SetTool(null);
+				Repaint();
+			}
+		}
 
-        #endregion
+		#endregion
 
-        #region Window Navigation
+		#region Window Navigation
 
-        private void WindowNavigation()
-        {
-            Event e = Event.current;
+		private void WindowNavigation() {
+			Event e = Event.current;
 
-            if (e.isScrollWheel) //Zoom
-            {
+			if (e.isScrollWheel) //Zoom
+			{
 				//Gets the zoom amount
 				float delta = e.delta.y;
 				float zoom = pixelsPerUnits * delta * ZOOM_SENSIBILITY;
@@ -295,342 +277,313 @@ namespace ShapeTracer.Shapes
 				zoomDirection = (GetWorkspaceMousePosition() - zoomDirection) * pixelsPerUnits;
 				zoomDirection.y *= -1;
 				spaceCenter += zoomDirection;
-                Repaint();
-                e.Use();
-            }
-            else if (e.button == 2 && e.type == EventType.MouseDrag) //Pan view
-            {
-                spaceCenter += e.delta;
-                Repaint();
-                e.Use();
-            }else if (e.keyCode == KeyCode.F && e.type == EventType.KeyDown)
+				Repaint();
+				e.Use();
+			}
+			else if (e.button == 2 && e.type == EventType.MouseDrag) //Pan view
 			{
+				spaceCenter += e.delta;
+				Repaint();
+				e.Use();
+			}
+			else if (e.keyCode == KeyCode.F && e.type == EventType.KeyDown) {
 				spaceCenter = new Vector2(position.width, position.height) / 2;
 				Repaint();
 				e.Use();
 			}
-        }
+		}
 
-		private Vector2 GetScreenSpaceMousePosition()
-		{
+		private Vector2 GetScreenSpaceMousePosition() {
 			Vector2 mousePos = Event.current.mousePosition;
 			mousePos.y = position.height - mousePos.y;
 			return mousePos;
 		}
 
-		private Vector2 GetWorkspaceMousePosition()
-		{
+		private Vector2 GetWorkspaceMousePosition() {
 			Vector2 pos = GetScreenSpaceMousePosition();
 			return WindowSpaceToPointSpace(Event.current.mousePosition);
 		}
 
-        #endregion
+		#endregion
 
-        #region Points
+		#region Points
 
-        #region Display
+		#region Display
 
-        private void DisplayPoints()
-        {
-            Event e = Event.current;
+		private void DisplayPoints() {
+			Handles.BeginGUI();
+			for (int i = 0; i < _asset.shape.PointCount; i++) {
+				Vector2 pointPos = PointSpaceToWindowSpace(_asset.shape.GetPointPosition(i));
+				if (_selectedId == i && enabledSelection) {
+					Handles.color = Color.green;
+				}
+				else {
+					Handles.color = Color.white;
+				}
+				Handles.DotHandleCap(0, pointPos, Quaternion.identity, 4.0f, EventType.Repaint);
+			}
+			Handles.EndGUI();
+		}
 
-            Handles.BeginGUI();
+		/// <summary>
+		/// Displays the edges of all points
+		/// </summary>
+		private void DisplayEdges() {
+			Handles.BeginGUI();
 
-            for (int i = 0; i < asset.shape.pointCount; i++)
-            {
-                Vector2 pointPos = PointSpaceToWindowSpace(asset.shape.GetPointPosition(i));
+			Handles.color = Color.white;
 
-                if (!showSelected)
-                {
-                    Handles.color = Color.white;
-                    Handles.DotHandleCap(0, pointPos, Quaternion.identity, 2.0f, EventType.Repaint);
-                }
-                else
-                {
-                    Handles.color = Color.white;
-                    if (i == selectedId)
-                    {
-                        Handles.color = Color.green;
-                        if (Handles.Button(pointPos, Quaternion.identity, 6f, 8f, Handles.DotHandleCap))
-                        {
-                            selectionFlag = true;
-                            selectedId = i;
-                            Repaint();
-                        }
-                    }
-                    else
-                    {
-                        if (Handles.Button(pointPos, Quaternion.identity, 4f , 6f , Handles.DotHandleCap))
-                        {
-                            selectionFlag = true;
-                            selectedId = i;
-                            Repaint();
-                        }
-                    }
-                }
-            }
+			for (int i = 0; i < _asset.shape.PointCount; i++) {
+				if (i > 0) {
+					if (_asset.shape.closeShape && i == _asset.shape.PointCount - 1 && _asset.shape.PointCount > 1) {
+						Handles.color = Color.grey;
+					}
+
+					Handles.DrawLine(PointSpaceToWindowSpace(_asset.shape.GetPointPosition(i)),
+						PointSpaceToWindowSpace(_asset.shape.GetPointPosition(i - 1)));
+				}
+			}
+			Handles.color = Color.white;
+
+			Handles.EndGUI();
+		}
 
 
-            Handles.EndGUI();
-        }
+		/// <summary>
+		/// Displays the current edited point settings
+		/// </summary>
+		/// <param name="id"></param>
+		private void DisplayPointPositionWindow(int id) {
+			_asset.shape.SetPointPosition(SelectedId,
+				EditorGUILayout.Vector2Field("Point " + SelectedId, _asset.shape.GetPointPosition(SelectedId)));
+		}
 
-        /// <summary>
-        /// Displays the edges of all points
-        /// </summary>
-        private void DisplayEdges()
-        {
-            Handles.BeginGUI();
+		#endregion
 
-            Handles.color = Color.white;
+		#region Position
 
-            for(int i = 0; i < asset.shape.pointCount; i++)
-            {
-                if (i > 0)
-                {
-                    if(asset.shape.closeShape && i == asset.shape.pointCount - 1 && asset.shape.pointCount > 1)
-                    {
-                        Handles.color = Color.grey;
-                    }
+		public Vector2 PointSpaceToWindowSpace(Vector2 position) {
+			position.y *= -1; //Invert the y axis
+			return position * pixelsPerUnits + spaceCenter;
+		}
 
-                    Handles.DrawLine( PointSpaceToWindowSpace(asset.shape.GetPointPosition(i)),
-                        PointSpaceToWindowSpace(asset.shape.GetPointPosition(i - 1)));
-                }
-            }
-            Handles.color = Color.white;
+		public Vector2 WindowSpaceToPointSpace(Vector2 position) {
+			position = (position - spaceCenter) / pixelsPerUnits;
+			position.y *= -1;
+			return position;
+		}
 
-            Handles.EndGUI();
-        }
+		#endregion
 
+		#region Selection
 
-        /// <summary>
-        /// Displays the current edited point settings
-        /// </summary>
-        /// <param name="id"></param>
-        private void DisplayPointPositionWindow(int id)
-        {
-            asset.shape.SetPointPosition(selectedId,
-                EditorGUILayout.Vector2Field("Point " + selectedId, asset.shape.GetPointPosition(selectedId)));
-        }
+		/// <summary>
+		/// Checks points selection
+		/// </summary>
+		private void SelectPoints() {
+			if (Event.current.button == 0 && Event.current.type == EventType.MouseDown && IsIntoWorkSpace(Event.current.mousePosition)) {
+				_selectedId = ShapeEditorSelection.GetClosestPointIndex(Event.current.mousePosition, this);
+				Repaint();
+				Event.current.Use();
+			}
+		}
 
-        #endregion
+		#endregion
 
-        #region Position
+		#endregion
 
-        public Vector2 PointSpaceToWindowSpace(Vector2 position)
-        {
-            position.y *= -1; //Invert the y axis
-            return position * pixelsPerUnits + spaceCenter;
-        }
+		#region Toolbox
 
-        public Vector2 WindowSpaceToPointSpace(Vector2 position)
-        {
-            position = (position - spaceCenter) / pixelsPerUnits;
-            position.y *= -1;
-            return position;
-        }
+		#region Tool Pannel
+		/// <summary>
+		/// Draws the tool buttons pannel
+		/// </summary>
+		/// <param name="tool"></param>
+		private void DrawToolButton(ShapeEditorTool tool) {
+			Color lastColor = GUI.backgroundColor;
+			Color buttonColor = (tool == _currentTool ? new Color(0.4f, 0.4f, 0.4f) : Color.white);
 
-        #endregion
+			GUI.backgroundColor = buttonColor;
 
-        #endregion
+			if (GUILayout.Button(tool.content, GUILayout.Width(TOOL_BUTTON_SIZE), GUILayout.Height(TOOL_BUTTON_SIZE))) {
+				SetTool(tool);
+			}
 
-        #region Toolbox
-
-        #region Tool Pannel
-		 /// <summary>
-		 /// Draws the tool buttons pannel
-		 /// </summary>
-		 /// <param name="tool"></param>
-        private void DrawToolButton(ShapeEditorTool tool)
-        {
-            Color lastColor = GUI.backgroundColor;
-            Color buttonColor = (tool == _currentTool ? new Color(0.4f, 0.4f, 0.4f) : Color.white);
-
-            GUI.backgroundColor = buttonColor;
-
-            if (GUILayout.Button(tool.content, GUILayout.Width(TOOL_BUTTON_SIZE), GUILayout.Height(TOOL_BUTTON_SIZE)))
-            {
-                if(_currentTool != tool)
-                {
-                    _currentTool = tool;
-					_currentTool.Init(this); //Initialize the tool
-                }
-                else
-                {
-                    _currentTool = _defaultTool; //Toggle off
-                }
-            }
-
-            GUI.backgroundColor = lastColor;
-        }
+			GUI.backgroundColor = lastColor;
+		}
 
 
-        /// <summary>
-        /// Draws tools pannel
-        /// </summary>
-        private void DrawToolPannel()
-        {
-            foreach(ShapeEditorTool tool in _tools)
-            {
-                DrawToolButton(tool);
-            }
-        }
+		/// <summary>
+		/// Draws tools pannel
+		/// </summary>
+		private void DrawToolPannel() {
+			foreach (ShapeEditorTool tool in _tools) {
+				DrawToolButton(tool);
+			}
+		}
 
-        #endregion
+		/// <summary>
+		/// Set the current tool, disable if equal to the parameter
+		/// </summary>
+		/// <param name="tool"></param>
+		private void SetTool(ShapeEditorTool tool) {
+			if(tool != _currentTool) {
+				_currentTool = tool;
+			}
+			else {
+				_currentTool = null;
+			}
+			enabledSelection = true; //By default enable the selection on change tool
 
-        #endregion
+			if(_currentTool != null) {
+				_currentTool.Init(); //Initialize the tool
+			}
+			else {
+				if(_tools.Length > 0) {
+					_currentTool = _tools[0];
+				}
+			}
+		}
 
-        #region Current Tool Utility
+		#endregion
 
-        private void DrawModeUtilityPannel()
-        {
-            Event e = Event.current;
-            RemovePointUtility(e);
-        }
+		#endregion
 
-        private void RemovePointUtility(Event e)
-        {
-            if (!showSelected) return;
+		#region Current Tool Utility
 
-            GUILayout.Space(BOX_AREA_OFFSET/2);
+		private void DrawModeUtilityPannel() {
+			Event e = Event.current;
+			RemovePointUtility(e);
+		}
 
-            if (selectedId >= 0)
-            {
-                bool delete = false;
+		private void RemovePointUtility(Event e) {
+			if (!enabledSelection) return;
 
-                if (e.keyCode == KeyCode.Delete && e.type == EventType.KeyDown)
-                {
-                    e.Use();
-                    delete = true;
-                }
+			GUILayout.Space(BOX_AREA_OFFSET / 2);
 
-                if (GUILayout.Button("Remove Point", GUILayout.Width(95), GUILayout.Height(UTILITY_BUTTON_HEIGHT)))
-                {
-                    delete = true;
-                }
+			if (SelectedId >= 0) {
+				bool delete = false;
 
-                if (delete == true)
-                {
-                    Undo.RecordObject(asset, "Delete Point");
-                    EditorUtility.SetDirty(asset);
-                    asset.shape.RemovePoint(selectedId);
-                }
+				if (e.keyCode == KeyCode.Delete && e.type == EventType.KeyDown) {
+					e.Use();
+					delete = true;
+				}
 
-            }
-        }
+				if (GUILayout.Button("Remove Point", GUILayout.Width(95), GUILayout.Height(UTILITY_BUTTON_HEIGHT))) {
+					delete = true;
+				}
 
-        #endregion
+				if (delete == true) {
+					Undo.RecordObject(_asset, "Delete Point");
+					EditorUtility.SetDirty(_asset);
+					_asset.shape.RemovePoint(SelectedId);
+				}
 
-        #region Shape Utility
+			}
+		}
 
-        private void DrawShapeUtilityPannel()
-        {
-            GUILayout.Space(BOX_AREA_OFFSET/2);
+		#endregion
 
-            asset.shape.closeShape =
-                GUILayout.Toggle(asset.shape.closeShape, "Close Shape", "Button",
-                GUILayout.Width(85), GUILayout.Height(UTILITY_BUTTON_HEIGHT));
-        }
+		#region Shape Utility
 
-        #endregion
+		private void DrawShapeUtilityPannel() {
+			GUILayout.Space(BOX_AREA_OFFSET / 2);
 
-        #region Grid
+			_asset.shape.closeShape =
+				GUILayout.Toggle(_asset.shape.closeShape, "Close Shape", "Button",
+				GUILayout.Width(85), GUILayout.Height(UTILITY_BUTTON_HEIGHT));
+		}
 
-        private void DrawGrid(float spacing, float opacity, bool displayUnits, Color color)
-        {
-            spacing *= BASE_GRID_RESOLUTION;
+		#endregion
 
-            int widthDivs = Mathf.CeilToInt(position.width / spacing);
-            int heightDivs = Mathf.CeilToInt(position.height / spacing);
+		#region Grid
 
-            Handles.BeginGUI();
+		private void DrawGrid(float spacing, float opacity, bool displayUnits, Color color) {
+			spacing *= BASE_GRID_RESOLUTION;
+
+			int widthDivs = Mathf.CeilToInt(position.width / spacing);
+			int heightDivs = Mathf.CeilToInt(position.height / spacing);
+
+			Handles.BeginGUI();
 
 			Color backupColor = Handles.color;
 
-            Color gridColor = color;
-            gridColor.a = opacity;
+			Color gridColor = color;
+			gridColor.a = opacity;
 
-            Handles.color = gridColor;
+			Handles.color = gridColor;
 
-            float xOffset = spaceCenter.x % spacing;
-            float yOffset = spaceCenter.y % spacing;
+			float xOffset = spaceCenter.x % spacing;
+			float yOffset = spaceCenter.y % spacing;
 
-            for(float h = yOffset; h < position.height; h += spacing)
-            {
-                Handles.DrawLine( new Vector2(0, h), new Vector2(position.width, h));
-            }
+			for (float h = yOffset; h < position.height; h += spacing) {
+				Handles.DrawLine(new Vector2(0, h), new Vector2(position.width, h));
+			}
 
-            for (float v = xOffset; v < position.width; v += spacing)
-            {
-                Handles.DrawLine(new Vector2(v, 0), new Vector2(v, position.height));
-            }
+			for (float v = xOffset; v < position.width; v += spacing) {
+				Handles.DrawLine(new Vector2(v, 0), new Vector2(v, position.height));
+			}
 
 			Handles.color = backupColor;
 
-            Handles.EndGUI();
-        }
+			Handles.EndGUI();
+		}
 
-        /// <summary>
-        /// Returns the snaped position of the input one
-        /// </summary>
-        /// <param name="spacing"></param>
-        /// <param name="pos"></param>
-        /// <returns></returns>
-        public Vector2 SnapToGrid(Vector2 pos)
-        {
-            float spacing = RemapToFirstPowerOfTen(pixelsPerUnits) * BASE_GRID_RESOLUTION;
-            Vector2 snappedPos = new Vector2();
+		/// <summary>
+		/// Returns the snaped position of the input one
+		/// </summary>
+		/// <param name="spacing"></param>
+		/// <param name="pos"></param>
+		/// <returns></returns>
+		public Vector2 SnapToGrid(Vector2 pos) {
+			float spacing = RemapToFirstPowerOfTen(pixelsPerUnits) * BASE_GRID_RESOLUTION;
+			Vector2 snappedPos = new Vector2();
 
-            snappedPos.x = Mathf.Floor(pos.x / spacing) * spacing;
-            snappedPos.y = Mathf.Floor(pos.y / spacing) * spacing;
+			snappedPos.x = Mathf.Floor(pos.x / spacing) * spacing;
+			snappedPos.y = Mathf.Floor(pos.y / spacing) * spacing;
 
-            snappedPos.x += spaceCenter.x % spacing;
-            snappedPos.y += spaceCenter.y % spacing;
+			snappedPos.x += spaceCenter.x % spacing;
+			snappedPos.y += spaceCenter.y % spacing;
 
-            return snappedPos;
-        }
+			return snappedPos;
+		}
 
-        #endregion
+		#endregion
 
-        #region Events
+		#region Events
 
-        private void OnUndoRedoPerformed()
-        {
-            Repaint();
-        }
+		private void OnUndoRedoPerformed() {
+			Repaint();
+		}
 
-        #endregion
+		#endregion
 
-        #region Utils
+		#region Utils
 
 
 
-        private static float RemapToFirstPowerOfTen(float value)
-        {
-            while (value > 10.0f || value < 1.0f)
-            {
-                if (value > 10.0f)
-                {
-                    value /= 10.0f;
-                }
-                else if (value < 1.0f)
-                {
-                    value *= 10.0f;
-                }
-            }
+		private static float RemapToFirstPowerOfTen(float value) {
+			while (value > 10.0f || value < 1.0f) {
+				if (value > 10.0f) {
+					value /= 10.0f;
+				}
+				else if (value < 1.0f) {
+					value *= 10.0f;
+				}
+			}
 
-            return value;
-        }
+			return value;
+		}
 
-        public bool IsIntoWorkSpace(Vector2 pos)
-        {
-            Rect workSpace = new Rect(TOOL_BUTTON_SIZE + BOX_AREA_OFFSET,
-                UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET,
-                position.width - TOOL_BUTTON_SIZE + BOX_AREA_OFFSET,
-                position.height - UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
+		public bool IsIntoWorkSpace(Vector2 pos) {
+			Rect workSpace = new Rect(TOOL_BUTTON_SIZE + BOX_AREA_OFFSET,
+				UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET,
+				position.width - TOOL_BUTTON_SIZE + BOX_AREA_OFFSET,
+				position.height - UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
 
-            return workSpace.Contains(pos);
-        }
+			return workSpace.Contains(pos);
+		}
 
-        #endregion
-    }
+		#endregion
+	}
 }

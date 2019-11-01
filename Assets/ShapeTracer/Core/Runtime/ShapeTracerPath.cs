@@ -116,7 +116,7 @@ namespace ShapeTracer.Path
                 section = Shape.defaultShape;
             }
 
-            int sectionVertexCount = section.pointCount;
+            int sectionVertexCount = section.PointCount;
 
             if(sectionVertexCount < 2)
             {
