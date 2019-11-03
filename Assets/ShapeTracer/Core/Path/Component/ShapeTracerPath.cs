@@ -129,6 +129,7 @@ namespace ShapeTracer.Path {
 
 					Quaternion secRotation = Quaternion.LookRotation(derivative, normal);
 					Vector2 pointScale = Vector2.Lerp(path[p].scale, path[p + 1].scale, blendT);
+					pointScale =  new Vector2(pointScale.x * _scale.x, pointScale.y * _scale.y);
 
 					//Debug.DrawRay(transform.position + path.GetBezierPosition(p, curveT), normal, Color.yellow);
 
@@ -137,8 +138,8 @@ namespace ShapeTracer.Path {
 					//Vertices and Uvs
 					for (int vert = 0; vert < sectionVertexCount; vert++) {
 						Vector2 pointPos = (Vector3)section.GetPointPosition(vert);
-						pointPos.x *= pointScale.x * _scale.x;
-						pointPos.y *= pointScale.y * _scale.y;
+						pointPos.x *= pointScale.x;
+						pointPos.y *= pointScale.y;
 						vertices[s * sectionVertexCount + vert] = bezierPos + secRotation * (pointPos);
 						uvs[s * sectionVertexCount + vert] = new Vector2(vert, uvRes);
 					}

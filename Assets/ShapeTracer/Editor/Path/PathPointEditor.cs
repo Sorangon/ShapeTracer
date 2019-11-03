@@ -123,10 +123,13 @@ namespace ShapeTracer.Path {
 				DrawPoint(i, view);
 			}
 
-			/*if (_selectedId >= 0 && Tools.current != Tool.None) //Locks the tool to none if a point is selected
-            {
-                Tools.current = Tool.None;
-            }*/
+			//Reset selection if press escape
+			if (Event.current.keyCode == KeyCode.Escape && Event.current.type == EventType.KeyDown) {
+				_selectedId = -1;
+				_selectedTangent = (PathTangentType)(-1);
+				DeselectPoint();
+				Event.current.Use();
+			}
 
 			_currentPath.UpdatePath();
 		}
@@ -136,7 +139,7 @@ namespace ShapeTracer.Path {
 		#region Draw Points
 
 		private static void DrawPoint(int index, SceneView view) {
-			Vector3 handlePosition = _currentPath.transform.position + _currentPath.pathData[index].position;
+			Vector3 handlePosition = CurveSpaceToWorldSpace(_currentPath.pathData[index].position); //Multiply by transform matrix
 
 			if (_displayNormal) {
 				Handles.DrawLine(handlePosition, handlePosition + _currentPath.pathData[index].normal * 2.0f);
@@ -159,10 +162,6 @@ namespace ShapeTracer.Path {
 			if (_selectedId == index) {
 				DrawSelectedPointHandles(index, handlePosition, handleSize);
 			}
-
-			//Vector3 pathRelativePointPos = _currentPath.pathData[index].position;
-			//pathRelativePointPos = CurveSpaceToObjectSpace(pathRelativePointPos);
-			//Handles.SphereHandleCap(0, pathRelativePointPos, Quaternion.identity, handleSize, EventType.Repaint);
 		}
 
 		private static void DrawSelectedPointHandles(int selectedId, Vector3 handlePos, float handleSize) {
@@ -172,7 +171,7 @@ namespace ShapeTracer.Path {
 			if (Tools.current != Tool.Rotate) {
 				//Draw tangents handles
 				for (int i = 0; i < 2; i++) {
-					Vector3 tangentPos = _currentPath.transform.position + point.GetObjectSpaceTangent((PathTangentType)i);
+					Vector3 tangentPos = CurveSpaceToWorldSpace(point.GetObjectSpaceTangent((PathTangentType)i));
 					Handles.DrawAAPolyLine(6, tangentPos, handlePos);
 
 					if (Handles.Button(tangentPos, Quaternion.identity, POINT_HANDLE_SIZE * handleSize, POINT_HANDLE_SIZE * 1.1f * handleSize, Handles.SphereHandleCap)) {
@@ -203,10 +202,10 @@ namespace ShapeTracer.Path {
 			else {
 				//Moves the curve tangent point
 				PathTangentType oppositeTangent = (PathTangentType)(1 - ((int)_selectedTangent));
-				handlePos = _currentPath.transform.position;
 
 				//Edits the position of the selected tangent
-				Vector3 newPos = MovePoint(point.GetObjectSpaceTangent(_selectedTangent) + handlePos);
+				Vector3 tangentPos = CurveSpaceToWorldSpace(point.GetObjectSpaceTangent((PathTangentType)_selectedTangent));
+				Vector3 newPos = MovePoint(tangentPos);
 
 				bool mirrorScale = !Event.current.alt;
 
@@ -226,19 +225,24 @@ namespace ShapeTracer.Path {
 				EditorUtility.SetDirty(_currentPath);
 			}
 
-			return handlePos - _currentPath.transform.position;
+			return WorldSpaceToCurveSpace(handlePos);
 		}
 
 
 		private static void SetPointRotation(PathPoint point) {
 			EditorGUI.BeginChangeCheck();
-			Vector3 tangentDir = point.GetPointSpaceTangent(PathTangentType.Out);
+			Vector3 tangentDir = _currentPath.transform.rotation * point.GetPointSpaceTangent(PathTangentType.Out);
 			Quaternion pivotRotation = Quaternion.LookRotation(tangentDir);
 			Quaternion roll = Quaternion.AngleAxis(point.normalAngle, Vector3.back);
-			Vector3 pointWorldPos = point.position + _currentPath.transform.position;
+			Vector3 pointWorldPos = CurveSpaceToWorldSpace(point.position);
 			float handleSize = HandleUtility.GetHandleSize(pointWorldPos);
-			Quaternion newRot = Handles.Disc(pivotRotation * roll, pointWorldPos, tangentDir, handleSize, false, 0.0f);
-			Handles.DrawLine(pointWorldPos + newRot * Vector3.left * handleSize, pointWorldPos + newRot * Vector3.right * handleSize);
+			Quaternion newRot = Handles.Disc(pivotRotation * roll,
+				pointWorldPos, tangentDir, handleSize, false, 0.0f);
+
+			//Line rotation
+			Quaternion lineRot = newRot * Quaternion.Inverse(pivotRotation) * Quaternion.LookRotation(tangentDir, _currentPath.transform.up);
+			Handles.DrawLine(pointWorldPos + lineRot * Vector3.left * handleSize, pointWorldPos + lineRot * Vector3.right * handleSize);
+
 
 			if (EditorGUI.EndChangeCheck()) {
 				Undo.RecordObject(_currentPath, "Rotate Point");
@@ -273,7 +277,7 @@ namespace ShapeTracer.Path {
 			Quaternion roll = Quaternion.AngleAxis(point.normalAngle, Vector3.back);
 			float handleSize = HandleUtility.GetHandleSize(handlePos);
 			EditorGUI.BeginChangeCheck();
-			Vector2 scale = Handles.ScaleHandle(point.scale, handlePos, pivotRotation * roll, handleSize);
+			Vector2 scale = Handles.ScaleHandle(point.scale, handlePos, _currentPath.transform.rotation * pivotRotation * roll, handleSize);
 
 			if (EditorGUI.EndChangeCheck()) {
 				Undo.RecordObject(_currentPath, "Scale Path Point");
@@ -286,7 +290,7 @@ namespace ShapeTracer.Path {
 
 		#region Coord Space
 
-		private static Vector3 CurveSpaceToObjectSpace(Vector3 position) {
+		private static Vector3 CurveSpaceToWorldSpace(Vector3 position) {
 			Matrix4x4 transform = Matrix4x4.TRS(_currentPath.transform.position, _currentPath.transform.rotation, _currentPath.transform.lossyScale);
 
 			position = transform.MultiplyPoint3x4(position);
@@ -294,7 +298,7 @@ namespace ShapeTracer.Path {
 			return position;
 		}
 
-		private static Vector3 ObjectSpaceToCurveSpace(Vector3 position) {
+		private static Vector3 WorldSpaceToCurveSpace(Vector3 position) {
 			Matrix4x4 transform = Matrix4x4.TRS(_currentPath.transform.position, _currentPath.transform.rotation, _currentPath.transform.lossyScale);
 
 			position = transform.inverse.MultiplyPoint3x4(position);

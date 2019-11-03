@@ -122,8 +122,8 @@ namespace ShapeTracer.Path {
 
 		private void DrawBezierCurve() {
 			int curves = _currentPath.pathData.Length - (_currentPath.loopTrack ? 0 : 1);
+			Matrix4x4 transform = Matrix4x4.TRS(_currentPath.transform.position, _currentPath.transform.rotation, _currentPath.transform.lossyScale);
 			for (int i = 0; i < curves; i++) {
-				Vector3 offset = _currentPath.transform.position;
 				PathPoint p0 = _currentPath.pathData[i];
 				PathPoint p1;
 
@@ -134,12 +134,11 @@ namespace ShapeTracer.Path {
 					p1 = _currentPath.pathData[0];
 				}
 
-
 				Handles.DrawBezier(
-					p0.position + offset,
-					p1.position + offset,
-					p0.GetObjectSpaceTangent(PathTangentType.Out) + offset,
-					p1.GetObjectSpaceTangent(PathTangentType.In) + offset, Color.green, null, 5f);
+					transform.MultiplyPoint3x4(p0.position),
+					transform.MultiplyPoint3x4(p1.position),
+					transform.MultiplyPoint3x4(p0.GetObjectSpaceTangent(PathTangentType.Out)),
+					transform.MultiplyPoint3x4(p1.GetObjectSpaceTangent(PathTangentType.In)), Color.green, null, 5f);
 			}
 		}
 
