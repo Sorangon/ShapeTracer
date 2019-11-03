@@ -68,13 +68,16 @@ namespace ShapeTracer.Path
 
             EditorGUI.BeginChangeCheck();
             Vector3 newPointPos = EditorGUILayout.Vector3Field("Position", _currentPath.pathData[index].position);
+			Vector2 scale = EditorGUILayout.Vector2Field("Scale", _currentPath.pathData[index].scale);
 
-            if (EditorGUI.EndChangeCheck())
+			if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(_currentPath, "Move Point");
+                Undo.RecordObject(_currentPath, "Set Point Transform");
                 EditorUtility.SetDirty(_currentPath);
                 _currentPath.pathData[index].position = newPointPos;
+				_currentPath.pathData[index].scale = scale;
             }
+
 
             GUILayout.Space(3.0f);
             EditorGUILayout.BeginHorizontal();
@@ -101,11 +104,12 @@ namespace ShapeTracer.Path
 			EditorGUILayout.EndHorizontal();
 
 			EditorGUI.BeginChangeCheck();
-			//Empty path toggle
+			AnimationCurve curve = EditorGUILayout.CurveField("Blend", _currentPath.pathData[index].blend);
 			bool isEmpty = EditorGUILayout.Toggle("Empty", _currentPath.pathData[index].isEmpty);
 			if (EditorGUI.EndChangeCheck()) {
 				Undo.RecordObject(_currentPath, "Toggled Empty Point");
 				EditorUtility.SetDirty(_currentPath);
+				_currentPath.pathData[index].blend = curve;
 				_currentPath.pathData[index].isEmpty = isEmpty;
 			}
 
@@ -202,6 +206,11 @@ namespace ShapeTracer.Path
                         SetPointRotation(_currentPath.pathData[selectedId]);
                         break;
 
+					case Tool.Scale:
+						//Scale the point
+						SetPointScale(handlePos, _currentPath.pathData[selectedId]);
+						break;
+
                     default:
                         //Moves curve the point
                         point.position = MovePoint(handlePos);
@@ -246,13 +255,9 @@ namespace ShapeTracer.Path
             EditorGUI.BeginChangeCheck();
             Vector3 tangentDir = point.GetPointSpaceTangent(PathTangentType.Out);
             Quaternion pivotRotation = Quaternion.LookRotation(tangentDir);
-                //Quaternion.AngleAxis(point.normalAngle, Vector3.forward) * Vector3.up);
             Quaternion roll = Quaternion.AngleAxis(point.normalAngle, Vector3.back);
-
             Vector3 pointWorldPos = point.position + _currentPath.transform.position;
-
             float handleSize = HandleUtility.GetHandleSize(pointWorldPos);
-
             Quaternion newRot = Handles.Disc(pivotRotation * roll, pointWorldPos,tangentDir, handleSize, false, 0.0f);
             Handles.DrawLine(pointWorldPos + newRot * Vector3.left * handleSize, pointWorldPos + newRot * Vector3.right * handleSize);
 
@@ -260,7 +265,6 @@ namespace ShapeTracer.Path
             {
                 Undo.RecordObject(_currentPath, "Rotate Point");
                 EditorUtility.SetDirty(_currentPath);
-
                 float deltaRot = -((point.normalAngle % 360) + newRot.eulerAngles.z);
 
                 /*if (_lastDeltaRotation * (deltaRot) < 0.0f && Mathf.Abs(deltaRot) > 180.0f)
@@ -284,6 +288,21 @@ namespace ShapeTracer.Path
                 _lastDeltaRotation = deltaRot;
             }
         }
+
+		private static void SetPointScale(Vector3 handlePos, PathPoint point) {
+			Vector3 tangentDir = point.GetPointSpaceTangent(PathTangentType.Out);
+			Quaternion pivotRotation = Quaternion.LookRotation(tangentDir);
+			Quaternion roll = Quaternion.AngleAxis(point.normalAngle, Vector3.back);
+			float handleSize = HandleUtility.GetHandleSize(handlePos);
+			EditorGUI.BeginChangeCheck();
+			Vector2 scale = Handles.ScaleHandle(point.scale, handlePos, pivotRotation * roll, handleSize);
+
+			if (EditorGUI.EndChangeCheck()) {
+				Undo.RecordObject(_currentPath, "Scale Path Point");
+				EditorUtility.SetDirty(_currentPath);
+				point.scale = scale;
+			}
+		}
 
         #endregion
 

@@ -13,6 +13,10 @@ namespace ShapeTracer {
 		[SerializeField] private Vector3 _outTangent = Vector3.back;
 		[SerializeField] private float _normalAngle = 0.0f;
 		[SerializeField] private bool _isEmpty = false;
+		[SerializeField] private Vector2 _scale = Vector2.one;
+
+		[SerializeField]
+		private AnimationCurve _blend = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
 
 		#endregion
 
@@ -23,6 +27,11 @@ namespace ShapeTracer {
 			set { _position = value; }
 		}
 
+
+		public Vector2 scale {
+			get { return _scale; }
+			set { _scale = value; }
+		}
 
 		/// <summary> The normal of the point in world space </summary>
 		public Vector3 normal {
@@ -36,6 +45,10 @@ namespace ShapeTracer {
 			set { _isEmpty = value; }
 		}
 
+		public AnimationCurve blend {
+			get { return _blend; }
+			set { _blend = value; }
+		}
 
 
 		/*public Vector3 binormal
