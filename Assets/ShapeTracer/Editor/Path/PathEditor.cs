@@ -54,15 +54,15 @@ namespace ShapeTracer.Path {
 
 			EditorGUI.BeginChangeCheck();
 
-			float widthMultiplier = Mathf.Clamp(EditorGUILayout.FloatField("Width", _currentPath.widthMultiplier), 0.01f, 1000);
-			int subdivisions = EditorGUILayout.IntSlider("Subdivisions", _currentPath.subdivisions, 1, 25);
+			Vector2 scale = EditorGUILayout.Vector2Field("Scale", _currentPath.scale);
+			int subdivisions = EditorGUILayout.IntField("Subdivisions", Mathf.Clamp(_currentPath.subdivisions, 1, 100));
 			float uvResolution = EditorGUILayout.Slider("Uv resolution", _currentPath.uvResolution, 0.2f, 10.0f);
 			bool loopTrack = EditorGUILayout.Toggle("Loop track", _currentPath.loopTrack);
 
 			if (EditorGUI.EndChangeCheck()) {
 				Undo.RecordObject(_currentPath, "Modify Path Settings");
 				EditorUtility.SetDirty(_currentPath);
-				_currentPath.widthMultiplier = widthMultiplier;
+				_currentPath.scale = scale;
 				_currentPath.subdivisions = subdivisions;
 				_currentPath.uvResolution = uvResolution;
 				_currentPath.loopTrack = loopTrack;

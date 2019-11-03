@@ -10,7 +10,7 @@ namespace ShapeTracer.Path {
 
 		[SerializeField] private ShapeAsset _crossSectionAsset = null;
 		[SerializeField] private PathData _pathData = new PathData();
-		[SerializeField, Range(0.5f, 2.0f)] private float _widthMultiplier = 1.0f;
+		[SerializeField] private Vector2 _scale = Vector2.one;
 		[SerializeField, Range(0.2f, 10.0f)] private float _uvResolution = 4.0f;
 		[SerializeField] private int _subdivisions = 10;
 		[SerializeField] private bool _loopTrack = false;
@@ -48,9 +48,9 @@ namespace ShapeTracer.Path {
 
 		public ShapeAsset shapeAsset { get { return _crossSectionAsset; } set { _crossSectionAsset = value; } }
 
-		public float widthMultiplier {
-			get { return _widthMultiplier; }
-			set { _widthMultiplier = Mathf.Clamp(value, 0.01f, value); }
+		public Vector2 scale {
+			get { return _scale; }
+			set { _scale = value; }
 		}
 
 		public int subdivisions {
@@ -128,7 +128,7 @@ namespace ShapeTracer.Path {
 					normal = Quaternion.LookRotation(derivative) * normal; //Applys derivative rotation to the normal
 
 					Quaternion secRotation = Quaternion.LookRotation(derivative, normal);
-					Vector2 scale = Vector2.Lerp(path[p].scale, path[p + 1].scale, blendT);
+					Vector2 pointScale = Vector2.Lerp(path[p].scale, path[p + 1].scale, blendT);
 
 					//Debug.DrawRay(transform.position + path.GetBezierPosition(p, curveT), normal, Color.yellow);
 
@@ -137,9 +137,9 @@ namespace ShapeTracer.Path {
 					//Vertices and Uvs
 					for (int vert = 0; vert < sectionVertexCount; vert++) {
 						Vector2 pointPos = (Vector3)section.GetPointPosition(vert);
-						pointPos.x *= scale.x;
-						pointPos.y *= scale.y;
-						vertices[s * sectionVertexCount + vert] = bezierPos + secRotation * (pointPos * _widthMultiplier);
+						pointPos.x *= pointScale.x * _scale.x;
+						pointPos.y *= pointScale.y * _scale.y;
+						vertices[s * sectionVertexCount + vert] = bezierPos + secRotation * (pointPos);
 						uvs[s * sectionVertexCount + vert] = new Vector2(vert, uvRes);
 					}
 
