@@ -6,19 +6,23 @@ using ShapeTracer.Shapes;
 namespace ShapeTracer.Path {
 	[RequireComponent(typeof(MeshRenderer)), RequireComponent(typeof(MeshFilter))]
 	public class ShapeTracerPath : MonoBehaviour {
-		#region Attributes
-
+		#region Data
 		[SerializeField] private ShapeAsset _crossSectionAsset = null;
 		[SerializeField] private PathData _pathData = new PathData();
 		[SerializeField] private Vector2 _scale = Vector2.one;
 		[SerializeField, Range(0.2f, 10.0f)] private float _uvResolution = 4.0f;
 		[SerializeField] private int _subdivisions = 10;
-		[SerializeField] private bool _loopTrack = false;
+		[SerializeField] private bool _loopCurve = false;
+		#endregion
 
+		#region Current
 		private MeshRenderer _targetRenderer = null;
 		private MeshFilter _targetFilter = null;
+		#endregion
 
-		private static readonly int[] _trisDrawOrder = new int[6] { 0, 2, 1, 1, 2, 3 };
+		#region Constants
+		private static readonly int[] TRIS_DRAW_ORDER = new int[6] { 0, 2, 1, 1, 2, 3 };
+		#endregion
 
 		#region Accessors
 
@@ -63,9 +67,7 @@ namespace ShapeTracer.Path {
 			set { _uvResolution = Mathf.Clamp(value, 0.01f, value); }
 		}
 
-		public bool loopTrack { get { return _loopTrack; } set { _loopTrack = value; } }
-
-		#endregion
+		public bool loopCurve { get { return _loopCurve; } set { _loopCurve = value; } }
 
 		#endregion
 
@@ -106,7 +108,7 @@ namespace ShapeTracer.Path {
 				return new Mesh();
 			}
 
-			int points = path.Length + (_loopTrack ? 1 : 0);
+			int points = path.Length + (_loopCurve ? 1 : 0);
 			Vector3[] vertices = new Vector3[sectionVertexCount * (points + (_subdivisions - 1) * (points - 1))];
 			Vector2[] uvs = new Vector2[vertices.Length];
 
@@ -149,17 +151,17 @@ namespace ShapeTracer.Path {
 						int subdivIndex = (s - 1) * (sectionVertexCount);
 
 						for (int vert = 0; vert < sectionVertexCount - shapeClosure; vert++) {
-							for (int tri = 0; tri < _trisDrawOrder.Length; tri++) {
-								int targetVert = _trisDrawOrder[tri];
+							for (int tri = 0; tri < TRIS_DRAW_ORDER.Length; tri++) {
+								int targetVert = TRIS_DRAW_ORDER[tri];
 
 								if (targetVert >= 2) {
 									targetVert += sectionVertexCount - 2;
 								}
 
-								if (vert != sectionVertexCount - 1 || (_trisDrawOrder[tri] == 0 || _trisDrawOrder[tri] == 2)) {
+								if (vert != sectionVertexCount - 1 || (TRIS_DRAW_ORDER[tri] == 0 || TRIS_DRAW_ORDER[tri] == 2)) {
 									targetVert = subdivIndex + targetVert + vert;
 								}
-								else if (vert == sectionVertexCount - 1 && (_trisDrawOrder[tri] == 1 || _trisDrawOrder[tri] == 3)) {
+								else if (vert == sectionVertexCount - 1 && (TRIS_DRAW_ORDER[tri] == 1 || TRIS_DRAW_ORDER[tri] == 3)) {
 									targetVert = subdivIndex + targetVert - 1;
 								}
 

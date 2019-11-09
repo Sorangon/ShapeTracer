@@ -17,7 +17,6 @@ namespace ShapeTracer.Path {
 		#region Events/Delegates
 		#endregion
 
-
 		#region Callbacks
 
 		private void OnEnable() {
@@ -57,7 +56,7 @@ namespace ShapeTracer.Path {
 			Vector2 scale = EditorGUILayout.Vector2Field("Scale", _currentPath.scale);
 			int subdivisions = EditorGUILayout.IntField("Subdivisions", Mathf.Clamp(_currentPath.subdivisions, 1, 100));
 			float uvResolution = EditorGUILayout.Slider("Uv resolution", _currentPath.uvResolution, 0.2f, 10.0f);
-			bool loopTrack = EditorGUILayout.Toggle("Loop track", _currentPath.loopTrack);
+			bool loopCurve = EditorGUILayout.Toggle("Loop curve", _currentPath.loopCurve);
 
 			if (EditorGUI.EndChangeCheck()) {
 				Undo.RecordObject(_currentPath, "Modify Path Settings");
@@ -65,7 +64,7 @@ namespace ShapeTracer.Path {
 				_currentPath.scale = scale;
 				_currentPath.subdivisions = subdivisions;
 				_currentPath.uvResolution = uvResolution;
-				_currentPath.loopTrack = loopTrack;
+				_currentPath.loopCurve = loopCurve;
 			}
 
 			GUILayout.Space(20);
@@ -121,7 +120,7 @@ namespace ShapeTracer.Path {
 		#region Bezier Curve
 
 		private void DrawBezierCurve() {
-			int curves = _currentPath.pathData.Length - (_currentPath.loopTrack ? 0 : 1);
+			int curves = _currentPath.pathData.Length - (_currentPath.loopCurve ? 0 : 1);
 			Matrix4x4 transform = Matrix4x4.TRS(_currentPath.transform.position, _currentPath.transform.rotation, _currentPath.transform.lossyScale);
 			for (int i = 0; i < curves; i++) {
 				PathPoint p0 = _currentPath.pathData[i];
@@ -134,11 +133,13 @@ namespace ShapeTracer.Path {
 					p1 = _currentPath.pathData[0];
 				}
 
+				Color bezierColor = !p0.isEmpty ? Color.green : new Color(0.5f, 0.5f, 0.5f, 0.2f);
+
 				Handles.DrawBezier(
 					transform.MultiplyPoint3x4(p0.position),
 					transform.MultiplyPoint3x4(p1.position),
 					transform.MultiplyPoint3x4(p0.GetObjectSpaceTangent(PathTangentType.Out)),
-					transform.MultiplyPoint3x4(p1.GetObjectSpaceTangent(PathTangentType.In)), Color.green, null, 5f);
+					transform.MultiplyPoint3x4(p1.GetObjectSpaceTangent(PathTangentType.In)), bezierColor, null, 5.0f);
 			}
 		}
 

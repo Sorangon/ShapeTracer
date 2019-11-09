@@ -14,6 +14,21 @@ namespace ShapeTracer.Shapes {
 
 		#endregion
 
+		#region Sub Structures
+		[System.Serializable]
+		public struct Vertice {
+			public Vector2 position;
+			public int index;
+		}
+
+		[System.Serializable]
+		public struct Edge {
+			public int from;
+			public int to;
+		}
+
+		#endregion
+
 		#region Properties
 
 
@@ -113,4 +128,3 @@ namespace ShapeTracer.Shapes {
 		#endregion
 	}
 }
-

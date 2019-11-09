@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEditor;
 
 namespace ShapeTracer.Shapes.Tools {
-	[ShapeTool("Draw", "Add or insert points on the shape", 10)]
+	[ShapeTool("Draw", "Add or insert points on the shape", "Assets/ShapeTracer/Editor/Skin/Textures/T_Draw_Icon.png", 10)]
 	public class DrawPointsTool : ShapeEditorTool {
 
 		public override void Init() {

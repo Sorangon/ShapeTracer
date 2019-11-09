@@ -11,7 +11,7 @@ public class ShapeToolAttribute : Attribute {
 
 	public string Name => _name;
 	public string Tooltip => _tooltip;
-	public string IconPath => IconPath;
+	public string IconPath => _iconPath;
 	public int Order => _order;
 	public KeyCode Shortcut => _shortcut;
 

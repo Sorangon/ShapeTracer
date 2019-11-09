@@ -66,11 +66,12 @@ namespace ShapeTracer.Shapes {
 		private int _selectedId = -1;
 
 		private Texture2D _bTex;
+		private GUISkin _guiSkin;
 		#endregion
 
 		#region Constants
 		
-		private const float UTILITY_BUTTON_HEIGHT = 20.0f;
+		private const float UTILITY_BUTTON_HEIGHT = 30.0f;
 		private const float UTILITY_BUTTON_WIDTH = 80.0f;
 
 		private const float TOOL_BUTTON_SIZE = 50.0f;
@@ -94,6 +95,10 @@ namespace ShapeTracer.Shapes {
 			Undo.undoRedoPerformed += OnUndoRedoPerformed;
 			Reset();
 			FindShapeEditorTools();
+
+			//Load skin
+			_guiSkin = (GUISkin)AssetDatabase.
+				LoadAssetAtPath("Assets/ShapeTracer/Editor/Skin/GUISkins/GUIS_ShapeEditor.guiskin", (typeof(GUISkin)));
 		}
 
 		public static void Edit(ShapeAsset asset) {
@@ -117,6 +122,10 @@ namespace ShapeTracer.Shapes {
 				if (toolIdentity != null) {
 					content.text = toolIdentity.Name;
 					content.tooltip = toolIdentity.Tooltip;
+					Texture tex = (Texture)AssetDatabase.LoadAssetAtPath(toolIdentity.IconPath, typeof(Texture));
+					if(tex != null) {
+						content.image = tex;
+					}
 					order = toolIdentity.Order;
 				}
 				else {
@@ -155,6 +164,8 @@ namespace ShapeTracer.Shapes {
 		#region GUI
 
 		private void OnGUI() {
+			GUI.skin = _guiSkin; //Set gui skin
+
 			Rect windowRect = new Rect(0, 0, position.width, position.height);
 			GUI.DrawTexture(windowRect, _backgroundTexture, ScaleMode.StretchToFill);
 
@@ -192,7 +203,7 @@ namespace ShapeTracer.Shapes {
 
 			Rect toolPannelRect = new Rect(0, UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET
 				, TOOL_BUTTON_SIZE + BOX_AREA_OFFSET
-				, position.height - UTILITY_BUTTON_HEIGHT + BOX_AREA_OFFSET);
+				, position.height - UTILITY_BUTTON_HEIGHT - BOX_AREA_OFFSET);
 			DrawArea(toolPannelRect, true, DrawToolPannel);
 
 			float upPannelWidth = Mathf.Clamp(position.width - SHAPE_UTILITY_PANNEL_WIDTH,
@@ -401,7 +412,7 @@ namespace ShapeTracer.Shapes {
 		/// <param name="tool"></param>
 		private void DrawToolButton(ShapeEditorTool tool) {
 			Color lastColor = GUI.backgroundColor;
-			Color buttonColor = (tool == _currentTool ? new Color(0.4f, 0.4f, 0.4f) : Color.white);
+			Color buttonColor = (tool == _currentTool ? new Color(0.4f, 1.0f, 1.0f) : Color.white);
 
 			GUI.backgroundColor = buttonColor;
 

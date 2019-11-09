@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEditor;
 
 namespace ShapeTracer.Shapes.Tools {
-	[ShapeTool("Move", "Move the selected point on the workspace", 0)]
+	[ShapeTool("Move", "Move the selected point on the workspace", "Assets/ShapeTracer/Editor/Skin/Textures/T_Move_Icon.png", 0)]
 	public class MoveTool : ShapeEditorTool {
 
 		public override void Process() {
