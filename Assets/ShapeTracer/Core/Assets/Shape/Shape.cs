@@ -11,6 +11,8 @@ namespace ShapeTracer.Shapes {
 
 		[SerializeField] private Vector2[] _points;
 		[SerializeField] private bool _closeShape;
+		//[SerializeField] private Vertice[] _vertices;
+		//[SerializeField] private Edge[] _edges;
 
 		#endregion
 
@@ -19,18 +21,27 @@ namespace ShapeTracer.Shapes {
 		public struct Vertice {
 			public Vector2 position;
 			public int index;
+
+			public Vertice(Vector2 position, int index) {
+				this.position = position;
+				this.index = index;
+			}
 		}
 
 		[System.Serializable]
 		public struct Edge {
 			public int from;
 			public int to;
+
+			public Edge(int from, int to) {
+				this.from = from;
+				this.to = to;
+			}
 		}
 
 		#endregion
 
 		#region Properties
-
 
 		public bool closeShape {
 			get {
@@ -71,7 +82,6 @@ namespace ShapeTracer.Shapes {
 			_points = points;
 			_closeShape = false;
 		}
-
 
 		#endregion
 
