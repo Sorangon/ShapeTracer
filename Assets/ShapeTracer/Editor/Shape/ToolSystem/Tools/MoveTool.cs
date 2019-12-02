@@ -29,7 +29,7 @@ namespace ShapeTracer.Shapes.Tools {
 				}
 
 				newPos = Editor.WindowSpaceToPointSpace(newPos);
-				Editor.Asset.shape.SetPointPosition(Editor.SelectedId, newPos);
+				Editor.Asset.shape.VerticePosition(Editor.SelectedId, newPos);
 
 				Editor.Repaint();
 			}
@@ -40,8 +40,8 @@ namespace ShapeTracer.Shapes.Tools {
 		/// </summary>
 		/// <param name="id"></param>
 		private void DisplayPointPositionWindow(int windowId) {
-			Editor.Asset.shape.SetPointPosition(Editor.SelectedId,
-				EditorGUILayout.Vector2Field("Point " + Editor.SelectedId, Editor.Asset.shape.GetPointPosition(Editor.SelectedId)));
+			Editor.Asset.shape.VerticePosition(Editor.SelectedId,
+				EditorGUILayout.Vector2Field("Point " + Editor.SelectedId, Editor.Asset.shape.GetVerticePosition(Editor.SelectedId)));
 		}
 	}
 }

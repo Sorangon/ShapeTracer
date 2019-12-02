@@ -28,7 +28,7 @@ namespace ShapeTracer.Shapes.Tools {
 
 			//Check all point distances and keep the closest one
 			for (int i = 0; i < editor.Asset.shape.PointCount; i++) {
-				float distance = Vector2.Distance(pointSpacePos, editor.Asset.shape.GetPointPosition(i));
+				float distance = Vector2.Distance(pointSpacePos, editor.Asset.shape.GetVerticePosition(i));
 				if(distance < closestDistance) {
 					closestId = i;
 					closestDistance = distance;
@@ -36,7 +36,7 @@ namespace ShapeTracer.Shapes.Tools {
 			}
 			
 			//Convert the point position to window space to calculate distance relatively to the screen
-			Vector2 selectedPointScreenPos = editor.Asset.shape.GetPointPosition(closestId);
+			Vector2 selectedPointScreenPos = editor.Asset.shape.GetVerticePosition(closestId);
 			selectedPointScreenPos = editor.PointSpaceToWindowSpace(selectedPointScreenPos);
 
 			//Returns the point if this one is close enough

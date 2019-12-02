@@ -54,10 +54,12 @@ namespace ShapeTracer.Shapes {
 		#region Current state
 		private ShapeAsset _asset = null;
 
-		private ShapeEditorTool[] _tools = { };
+		private ShapeEditorTool[] _shapeTools = { };
 		private ShapeEditorTool _currentTool = null;
 
 		private static bool _isActive = false;
+
+		//private bool _activeUVEditor = false;
 
 		private float pixelsPerUnits = 200.0f;
 
@@ -107,8 +109,10 @@ namespace ShapeTracer.Shapes {
 			current.Show();
 			current.Reset();
 		}
-
-
+	
+		/// <summary>
+		/// Find every shape tools
+		/// </summary>
 		private void FindShapeEditorTools() {
 			SortedList<int, ShapeEditorTool> tools = new SortedList<int, ShapeEditorTool>();
 			foreach (Type type in Assembly.GetAssembly(typeof(ShapeEditorTool)).GetTypes().Where(mType => mType.IsClass && !mType.IsAbstract &&
@@ -136,13 +140,13 @@ namespace ShapeTracer.Shapes {
 				tools.Add(order, tool);
 			}
 
-			_tools = new ShapeEditorTool[tools.Count];
+			_shapeTools = new ShapeEditorTool[tools.Count];
 			for (int i = 0; i < tools.Count; i++) {
-				_tools[i] = tools.ElementAt(i).Value;
+				_shapeTools[i] = tools.ElementAt(i).Value;
 			}
 
-			if(_tools.Length > 0) {
-				_currentTool = _tools[0];
+			if(_shapeTools.Length > 0) {
+				_currentTool = _shapeTools[0];
 			}
 		}
 
@@ -166,31 +170,10 @@ namespace ShapeTracer.Shapes {
 		private void OnGUI() {
 			GUI.skin = _guiSkin; //Set gui skin
 
-			Rect windowRect = new Rect(0, 0, position.width, position.height);
-			GUI.DrawTexture(windowRect, _backgroundTexture, ScaleMode.StretchToFill);
-
-			float gridResolution = RemapToFirstPowerOfTen(pixelsPerUnits);
-
-			DrawGrid(gridResolution, 0.1f, false, Color.black);
-			DrawGrid(gridResolution * 10.0f, 0.2f, true, Color.black);
-			DrawGrid(1000f, 0.2f, false, Color.white);
-			WindowNavigation();
-
-			if (_asset == null) return;
-
-			//Process current selected tool
-			if (_currentTool != null) {
-				_currentTool.Process();
-			}
-
-			//Manage point display and controls
-			int pointsToDisplay = _asset.shape.PointCount - (_asset.shape.closeShape ? 1 : 0);
-			if (enabledSelection) {
-				SelectPoints();
-			}
-
-			DisplayPoints();
-			DisplayEdges();
+			DrawWorkSpace();
+			//if (_activeUVEditor) {
+			//	DrawUVWorksapce();
+			//}
 
 			//Display pannels
 			Color lastBaseColor = GUI.color;
@@ -224,6 +207,68 @@ namespace ShapeTracer.Shapes {
 			CheckShortuts();
 		}
 
+		private void DrawWorkSpace() {
+			//float spaceX = _activeUVEditor ? position.width / 2 : 0;
+			GUILayout.BeginArea(new Rect(0, 0, position.width, position.height));
+			Rect windowRect = new Rect(0, 0, position.width, position.height);
+			GUI.DrawTexture(windowRect, _backgroundTexture, ScaleMode.StretchToFill);
+
+			float gridResolution = RemapToFirstPowerOfTen(pixelsPerUnits);
+
+			DrawGrid(gridResolution, 0.1f, false, Color.black);
+			DrawGrid(gridResolution * 10.0f, 0.2f, true, Color.black);
+			DrawGrid(1000f, 0.2f, false, Color.white);
+			WindowNavigation();
+
+			if (_asset == null) return;
+
+			//Process current selected tool
+			if (_currentTool != null) {
+				_currentTool.Process();
+			}
+
+			//Manage point display and controls
+			int pointsToDisplay = _asset.shape.PointCount - (_asset.shape.closeShape ? 1 : 0);
+			if (enabledSelection) {
+				SelectPoints();
+			}
+
+			DisplayPoints();
+			DisplayEdges();
+
+			GUILayout.EndArea();
+		}
+
+		//private void DrawUVWorksapce() {
+		//	GUILayout.BeginArea(new Rect(0, 0, position.width/2, position.height));
+		//	Rect windowRect = new Rect(0, 0, position.width / 2, position.height);
+		//	GUI.DrawTexture(windowRect, _backgroundTexture, ScaleMode.StretchToFill);
+
+		//	float gridResolution = RemapToFirstPowerOfTen(pixelsPerUnits);
+
+		//	DrawGrid(gridResolution, 0.1f, false, Color.black);
+		//	DrawGrid(gridResolution * 10.0f, 0.2f, true, Color.black);
+		//	DrawGrid(1000f, 0.2f, false, Color.white);
+		//	WindowNavigation();
+
+		//	if (_asset == null) return;
+
+		//	//Process current selected tool
+		//	if (_currentTool != null) {
+		//		_currentTool.Process();
+		//	}
+
+		//	//Manage point display and controls
+		//	int pointsToDisplay = _asset.shape.PointCount - (_asset.shape.closeShape ? 1 : 0);
+		//	if (enabledSelection) {
+		//		SelectPoints();
+		//	}
+
+		//	DisplayPoints();
+		//	DisplayEdges();
+
+		//	GUILayout.EndArea();
+		//}
 
 		private void DrawArea(Rect rect, bool isVertical, Action drawFunction) {
 			Rect areaRect = rect;
@@ -298,7 +343,7 @@ namespace ShapeTracer.Shapes {
 				e.Use();
 			}
 			else if (e.keyCode == KeyCode.F && e.type == EventType.KeyDown) {
-				spaceCenter = new Vector2(position.width, position.height) / 2;
+				RecenterView();
 				Repaint();
 				e.Use();
 			}
@@ -315,6 +360,11 @@ namespace ShapeTracer.Shapes {
 			return WindowSpaceToPointSpace(Event.current.mousePosition);
 		}
 
+		private void RecenterView() {
+			//float widthCenter = _activeUVEditor ? position.width / 2 : position.width;
+			spaceCenter = new Vector2(position.width, position.height) / 2;
+		}
+
 		#endregion
 
 		#region Points
@@ -324,7 +374,7 @@ namespace ShapeTracer.Shapes {
 		private void DisplayPoints() {
 			Handles.BeginGUI();
 			for (int i = 0; i < _asset.shape.PointCount; i++) {
-				Vector2 pointPos = PointSpaceToWindowSpace(_asset.shape.GetPointPosition(i));
+				Vector2 pointPos = PointSpaceToWindowSpace(_asset.shape.GetVerticePosition(i));
 				if (_selectedId == i && enabledSelection) {
 					Handles.color = Color.green;
 				}
@@ -350,8 +400,8 @@ namespace ShapeTracer.Shapes {
 						Handles.color = Color.grey;
 					}
 
-					Handles.DrawLine(PointSpaceToWindowSpace(_asset.shape.GetPointPosition(i)),
-						PointSpaceToWindowSpace(_asset.shape.GetPointPosition(i - 1)));
+					Handles.DrawLine(PointSpaceToWindowSpace(_asset.shape.GetVerticePosition(i)),
+						PointSpaceToWindowSpace(_asset.shape.GetVerticePosition(i - 1)));
 				}
 			}
 			Handles.color = Color.white;
@@ -365,8 +415,8 @@ namespace ShapeTracer.Shapes {
 		/// </summary>
 		/// <param name="id"></param>
 		private void DisplayPointPositionWindow(int id) {
-			_asset.shape.SetPointPosition(SelectedId,
-				EditorGUILayout.Vector2Field("Point " + SelectedId, _asset.shape.GetPointPosition(SelectedId)));
+			_asset.shape.VerticePosition(SelectedId,
+				EditorGUILayout.Vector2Field("Point " + SelectedId, _asset.shape.GetVerticePosition(SelectedId)));
 		}
 
 		#endregion
@@ -428,7 +478,7 @@ namespace ShapeTracer.Shapes {
 		/// Draws tools pannel
 		/// </summary>
 		private void DrawToolPannel() {
-			foreach (ShapeEditorTool tool in _tools) {
+			foreach (ShapeEditorTool tool in _shapeTools) {
 				DrawToolButton(tool);
 			}
 		}
@@ -450,8 +500,8 @@ namespace ShapeTracer.Shapes {
 				_currentTool.Init(); //Initialize the tool
 			}
 			else {
-				if(_tools.Length > 0) {
-					_currentTool = _tools[0];
+				if(_shapeTools.Length > 0) {
+					_currentTool = _shapeTools[0];
 				}
 			}
 		}
@@ -487,7 +537,7 @@ namespace ShapeTracer.Shapes {
 				if (delete == true) {
 					Undo.RecordObject(_asset, "Delete Point");
 					EditorUtility.SetDirty(_asset);
-					_asset.shape.RemovePoint(SelectedId);
+					_asset.shape.RemoveVertice(SelectedId);
 				}
 
 			}
@@ -500,9 +550,18 @@ namespace ShapeTracer.Shapes {
 		private void DrawShapeUtilityPannel() {
 			GUILayout.Space(BOX_AREA_OFFSET / 2);
 
+
 			_asset.shape.closeShape =
 				GUILayout.Toggle(_asset.shape.closeShape, "Close Shape", "Button",
 				GUILayout.Width(85), GUILayout.Height(UTILITY_BUTTON_HEIGHT));
+
+			//EditorGUI.BeginChangeCheck();
+			//_activeUVEditor = GUILayout.Toggle(_activeUVEditor, "Edit UV", "Button",
+			//	GUILayout.Width(65), GUILayout.Height(UTILITY_BUTTON_HEIGHT));
+			//if (EditorGUI.EndChangeCheck()) {
+			//	RecenterView();
+			//	Repaint();
+			//}
 		}
 
 		#endregion

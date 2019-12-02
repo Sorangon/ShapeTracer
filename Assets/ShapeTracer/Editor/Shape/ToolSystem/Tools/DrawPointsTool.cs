@@ -22,14 +22,14 @@ namespace ShapeTracer.Shapes.Tools {
 			}
 
 			if (Editor.Asset.shape.closeShape == true && Editor.Asset.shape.PointCount > 1) {
-				Vector2 lastPoint = Editor.PointSpaceToWindowSpace(Editor.Asset.shape.GetPointPosition(Editor.Asset.shape.PointCount - 2));
-				Vector2 firstPoint = Editor.PointSpaceToWindowSpace(Editor.Asset.shape.GetPointPosition(0));
+				Vector2 lastPoint = Editor.PointSpaceToWindowSpace(Editor.Asset.shape.GetVerticePosition(Editor.Asset.shape.PointCount - 2));
+				Vector2 firstPoint = Editor.PointSpaceToWindowSpace(Editor.Asset.shape.GetVerticePosition(0));
 
 				Handles.DrawLine(lastPoint, mousePos);
 				Handles.DrawLine(firstPoint, mousePos);
 			}
 			else if (Editor.Asset.shape.closeShape == false && Editor.Asset.shape.PointCount > 0) {
-				Vector2 fromPoint = Editor.PointSpaceToWindowSpace(Editor.Asset.shape.GetPointPosition(Editor.Asset.shape.PointCount - 1));
+				Vector2 fromPoint = Editor.PointSpaceToWindowSpace(Editor.Asset.shape.GetVerticePosition(Editor.Asset.shape.PointCount - 1));
 				Handles.DrawLine(fromPoint, mousePos);
 			}
 
@@ -38,7 +38,10 @@ namespace ShapeTracer.Shapes.Tools {
 			if (Event.current.button == 0 && Event.current.type == EventType.MouseDown && Editor.IsIntoWorkSpace(mousePos)) {
 				Undo.RecordObject(Editor.Asset, "Add Point");
 				EditorUtility.SetDirty(Editor.Asset);
-				Editor.Asset.shape.AddPoint(Editor.WindowSpaceToPointSpace(mousePos));
+				Vector2 verticePos = Editor.WindowSpaceToPointSpace(mousePos);
+				float lastVerticeU = Editor.Asset.shape.GetVertexU(Editor.Asset.shape.PointCount - 1);
+				float verticeU = lastVerticeU + (1 - lastVerticeU) / 2;
+				Editor.Asset.shape.AddVertice(new Shape.Vertice(verticePos, verticeU));
 				Event.current.Use();
 				Editor.Repaint();
 			}

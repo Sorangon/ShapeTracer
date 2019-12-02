@@ -139,7 +139,7 @@ namespace ShapeTracer.Path {
 
 					//Vertices and Uvs
 					for (int vert = 0; vert < sectionVertexCount; vert++) {
-						Vector2 pointPos = (Vector3)section.GetPointPosition(vert);
+						Vector2 pointPos = (Vector3)section.GetVerticePosition(vert);
 						pointPos.x *= pointScale.x;
 						pointPos.y *= pointScale.y;
 						vertices[s * sectionVertexCount + vert] = bezierPos + secRotation * (pointPos);

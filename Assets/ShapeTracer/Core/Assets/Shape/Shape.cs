@@ -9,10 +9,8 @@ namespace ShapeTracer.Shapes {
 	public struct Shape {
 		#region Data
 
-		[SerializeField] private Vector2[] _points;
+		[SerializeField] private Vertice[] _vertices;
 		[SerializeField] private bool _closeShape;
-		//[SerializeField] private Vertice[] _vertices;
-		//[SerializeField] private Edge[] _edges;
 
 		#endregion
 
@@ -20,22 +18,11 @@ namespace ShapeTracer.Shapes {
 		[System.Serializable]
 		public struct Vertice {
 			public Vector2 position;
-			public int index;
+			public float u;
 
-			public Vertice(Vector2 position, int index) {
+			public Vertice(Vector2 position, float u) {
 				this.position = position;
-				this.index = index;
-			}
-		}
-
-		[System.Serializable]
-		public struct Edge {
-			public int from;
-			public int to;
-
-			public Edge(int from, int to) {
-				this.from = from;
-				this.to = to;
+				this.u = u;
 			}
 		}
 
@@ -45,7 +32,7 @@ namespace ShapeTracer.Shapes {
 
 		public bool closeShape {
 			get {
-				if (_points.Length < 2) {
+				if (_vertices.Length < 2) {
 					return false;
 				}
 				else {
@@ -55,61 +42,67 @@ namespace ShapeTracer.Shapes {
 			set {
 				//Change state
 				if (value == true && _closeShape == false) {
-					AddPoint(_points[0]);
+					AddVertice(_vertices[0]);
 				}
 				else if (value == false && _closeShape == true) {
-					RemovePoint(PointCount - 1);
+					RemoveVertice(PointCount - 1);
 				}
 
 				_closeShape = value;
 			}
 		}
 
-		public static Shape defaultShape {
-			get {
-				Shape shape = new Shape(new Vector2[2] { new Vector2(-1, 0), new Vector2(1, 0) });
-				return shape;
-			}
-		}
+		public static Shape defaultShape =>
+				 new Shape(new Vertice[2] {
+					new Vertice(new Vector2(-1, 0), 0f),
+					new Vertice(new Vector2(1, 0), 1f)
+				});
 
-		public int PointCount => _points.Length;
+		public int PointCount => _vertices.Length;
 
 		#endregion
 
 		#region Contructors
 
-		public Shape(Vector2[] points) {
-			_points = points;
+		public Shape(Vertice[] vert) {
+			_vertices = vert;
 			_closeShape = false;
 		}
 
 		#endregion
 
-
-
 		#region Points
 
-		public void SetPointPosition(int index, Vector2 pos) {
+		public void VerticePosition(int index, Vector2 pos) {
 			if (_closeShape && (index == 0 || index == PointCount - 1)) {
-				_points[0] = pos;
-				_points[PointCount - 1] = pos;
+				_vertices[0].position = pos;
+				_vertices[PointCount - 1].position = pos;
 			}
 			else {
-				_points[index] = pos;
+				_vertices[index].position = pos;
 			}
 		}
 
-		public Vector2 GetPointPosition(int index) {
+		public void SetVertexU(int index, float pos) {
+			_vertices[index].u = pos;
+		}
+
+		public Vector2 GetVerticePosition(int index) {
 			index = Mathf.Clamp(index, 0, PointCount);
-			return _points[index];
+			return _vertices[index].position;
+		}
+
+		public float GetVertexU(int index) {
+			index = Mathf.Clamp(index, 0, PointCount);
+			return _vertices[index].u;
 		}
 
 		/// <summary>
 		/// Adds a point from the last one
 		/// </summary>
 		/// <param name="position"></param>
-		public void AddPoint(Vector2 position) {
-			AddPoint(PointCount - 1, position);
+		public void AddVertice(Vertice vert) {
+			AddVertice(PointCount - 1, vert);
 		}
 
 		/// <summary>
@@ -117,22 +110,22 @@ namespace ShapeTracer.Shapes {
 		/// </summary>
 		/// <param name="fromIndex"></param>
 		/// <param name="position"></param>
-		public void AddPoint(int fromIndex, Vector2 position) {
-			List<Vector2> pointList = _points.ToList();
+		public void AddVertice(int fromIndex, Vertice vert) {
+			List<Vertice> pointList = _vertices.ToList();
 
 			if (!_closeShape) {
 				fromIndex++;
 			}
 
-			pointList.Insert(fromIndex, position);
+			pointList.Insert(fromIndex, vert);
 
-			_points = pointList.ToArray();
+			_vertices = pointList.ToArray();
 		}
 
-		public void RemovePoint(int index) {
-			List<Vector2> pts = _points.ToList();
+		public void RemoveVertice(int index) {
+			List<Vertice> pts = _vertices.ToList();
 			pts.RemoveAt(index);
-			_points = pts.ToArray();
+			_vertices = pts.ToArray();
 		}
 
 		#endregion
