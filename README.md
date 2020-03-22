@@ -1,6 +1,6 @@
 # Shape Tracer
 
-### Shape tracer allow you to extrude shape along a path. You simply have to create your shape on the Shape Editor, setup your path and choose the shape you want to extrude !
+### Shape tracer allow you to extrude shape along a path. You simply have to create your Shape on the Shape Editor, setup your path and choose the Shape you want to extrude !
 
 &nbsp;
 
@@ -24,7 +24,7 @@ You can edit the curve with transformation tools:
 <li><b>Move Tool</b> : Move selected point or selected tangent, hold <b>Alt</b> to disable tangent mirror editing</li>
 <li><b>Rotate Tool</b> : Pitch the selected point</li>
 <li><b>Scale Tool</b> : Set X and Y scale of the point</li> 
-Press <b>Escape</b> to deselect point
+Press <b>Escape</b> to deselect point.
 
 &nbsp;
 
@@ -43,19 +43,19 @@ Press <b>Escape</b> to deselect point
 
 ## Shape Asset
 
-Shape are the cross sections extruded by the shape tracer path. Can be edited from the <b>Shape Editor Window</b>.
+`Shapes` are the cross sections extruded by the `Shape Tracer Path`. Can be edited from the <b>Shape Editor Window</b>.
 
 ![Shape Editor](./Documentation/img_shapeEditor.PNG)
 
 You can create a `Shape Asset` from Create/Shape Tracer/Shape or from a `Shape Tracer Path` with a empty shape.</br>
 On the asset, select <b>Open Shape Editor</b> to open the Shape Editor Window and edit the shape. Also you can select <b>Edit</b> on a `Shape Tracer Path`.</br>
-Toggle <b>Close Shape</b> to make loo your shape. 
+Toggle <b>Close Shape</b> to make loop your shape. 
 
 By default, you have two tools:
 <li><b>Move</b> : Move the select point, hold <b>Ctrl</b> to snap to the grid.</li>
 <li><b>Draw</b> : Draw points depending order : hold <b>Ctrl</b> to snap to the grid. <b>The generated mesh normal depends on the point order !</b>.</li>
 
-Press <b>F</b> to center view and <b>Escape</b> to deselect current tool (reset on <b>Move</b> tool by default)
+Press <b>F</b> to center view and <b>Escape</b> to deselect current tool (reset on <b>Move</b> tool by default).
 
 
 &nbsp;
