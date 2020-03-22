@@ -13,7 +13,8 @@
 
 ## Shape Tracer Path component
 
-![Shape Tracer Path Component](./Documentation/img_shapeTracerComponent.PNG) ![Shape Tracer Path Scene](./Documentation/img_shapeTracerPathScene.PNG)
+![Shape Tracer Path Component](./Documentation/img_shapeTracerComponent.PNG) 
+![Shape Tracer Path Scene](./Documentation/img_shapeTracerPathScene.PNG)
 
 The `Shape Tracer Path` take a `Shape Asset` as input and extrude it on a bezier curve.</br>If the input `Shape Asset` is empty, you can create a new one with the `Create` button. Also you can edit the current shape with the button `Edit`
 
