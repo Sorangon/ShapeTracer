@@ -16,7 +16,8 @@
 ![Shape Tracer Path Component Image](./Documentation/img_shapeTracerComponentImage.PNG) ![Shape Tracer Path Scene](./Documentation/img_shapeTracerPathScene.PNG)
 
 
-The `Shape Tracer Path` take a `Shape Asset` as input and extrude it on a bezier curve.</br>If the input `Shape Asset` is empty, you can create a new one with the `Create` button. Also you can edit the current shape with the button `Edit`
+The `Shape Tracer Path` take a `Shape Asset` as input and extrude it on a bezier curve.
+If the input `Shape Asset` is empty, you can create a new one with the `Create` button. Also you can edit the current shape with the button `Edit`
 
 You can create a new `Shape Tracer Path` from GameObject/3D Objects/Shape Tracer Path
 
@@ -47,8 +48,9 @@ Press <b>Escape</b> to deselect point.
 
 ![Shape Editor](./Documentation/img_shapeEditor.PNG)
 
-You can create a `Shape Asset` from Create/Shape Tracer/Shape or from a `Shape Tracer Path` with a empty shape.</br>
-On the asset, select <b>Open Shape Editor</b> to open the Shape Editor Window and edit the shape. Also you can select <b>Edit</b> on a `Shape Tracer Path`.</br>
+You can create a `Shape Asset` from Create/Shape Tracer/Shape or from a `Shape Tracer Path` with a empty shape.
+On the asset, select <b>Open Shape Editor</b> to open the Shape Editor Window and edit the shape. Also you can select <b>Edit</b> on a `Shape Tracer Path`.
+
 Toggle <b>Close Shape</b> to make loop your shape. 
 
 By default, you have two tools:
@@ -62,7 +64,7 @@ Press <b>F</b> to center view and <b>Escape</b> to deselect current tool (reset 
 
 ### Custom Shape Editor Window Tools
 
-You also can create your own shape tools inheriting <b>Shape Tool</b> class. <b>Must be in the Editor assembly of the plugin !</b></br>
+You also can create your own shape tools inheriting <b>Shape Tool</b> class. <b>Must be in the Editor assembly of the plugin !</b>
 Use <b>Shape Tool Attribute</b> to modify the tool icon (Name, Icon Path, Tooltip, Order).
 
 ```cs
